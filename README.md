@@ -53,8 +53,8 @@ MailBridge watches your email accounts in real time. When a new email arrives, t
 Requirements: **Node.js 20+**
 
 ```bash
-git clone https://github.com/<you>/mailbridge.git
-cd mailbridge
+git clone https://github.com/autoshifttech/email.git
+cd email
 npm install
 cp .env.example .env
 ```
