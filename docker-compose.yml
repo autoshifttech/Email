@@ -1,0 +1,14 @@
+services:
+  mailbridge:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file: .env
+    environment:
+      DATABASE_URL: "file:/app/data/mailbridge.db"
+    volumes:
+      - mailbridge-data:/app/data
+
+volumes:
+  mailbridge-data:

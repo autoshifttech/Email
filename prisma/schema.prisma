@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String   @default("")
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+/// Key/value settings managed from the dashboard (WhatsApp config, notification rules...).
+/// Secret values are AES-256-GCM encrypted.
+model Setting {
+  key       String   @id
+  value     String
+  secret    Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+}
+
+/// AI providers (any OpenAI-compatible API: Groq, Gemini, OpenRouter, OpenAI, Ollama...).
+model AiProvider {
+  id           String    @id @default(cuid())
+  name         String
+  preset       String    @default("custom")
+  baseUrl      String
+  model        String
+  encApiKey    String    @default("")
+  keyHint      String    @default("")
+  isActive     Boolean   @default(false)
+  lastTestedAt DateTime?
+  lastTestOk   Boolean?
+  lastError    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model EmailAccount {
+  id               String    @id @default(cuid())
+  label            String
+  address          String    @unique
+  displayName      String    @default("")
+  preset           String    @default("custom")
+  imapHost         String
+  imapPort         Int       @default(993)
+  imapSecure       Boolean   @default(true)
+  smtpHost         String
+  smtpPort         Int       @default(465)
+  smtpSecure       Boolean   @default(true)
+  username         String
+  encPassword      String
+  appendSent       Boolean   @default(true)
+  isActive         Boolean   @default(true)
+  isDefault        Boolean   @default(false)
+  notifyOnWhatsApp Boolean   @default(true)
+  signature        String    @default("")
+  lastUid          Int       @default(0)
+  uidValidity      String    @default("")
+  status           String    @default("pending") // pending | connected | error | disabled
+  lastError        String?
+  lastSyncAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  emails           Email[]
+  drafts           Draft[]
+}
+
+model Email {
+  id          String       @id @default(cuid())
+  accountId   String
+  account     EmailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  direction   String       @default("IN") // IN | OUT
+  uid         Int?
+  mailbox     String       @default("INBOX")
+  messageId   String?
+  inReplyTo   String?
+  references  String       @default("")
+  fromName    String       @default("")
+  fromAddress String       @default("")
+  to          String       @default("")
+  cc          String       @default("")
+  subject     String       @default("")
+  text        String       @default("")
+  html        String       @default("")
+  snippet     String       @default("")
+  summary     String?
+  priority    String?      // low | normal | high | urgent
+  category    String?
+  isRead      Boolean      @default(false)
+  isArchived  Boolean      @default(false)
+  notifiedAt  DateTime?
+  waMessageId String?
+  receivedAt  DateTime     @default(now())
+  createdAt   DateTime     @default(now())
+  drafts      Draft[]
+
+  @@index([accountId, receivedAt])
+  @@index([waMessageId])
+  @@index([messageId])
+}
+
+model Draft {
+  id             String       @id @default(cuid())
+  accountId      String
+  account        EmailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  replyToEmailId String?
+  replyToEmail   Email?       @relation(fields: [replyToEmailId], references: [id], onDelete: SetNull)
+  mode           String       @default("NEW") // REPLY | NEW | BROADCAST
+  recipients     String       @default("[]") // JSON array of email addresses
+  groupId        String?
+  subject        String       @default("")
+  body           String       @default("")
+  prompt         String?
+  author         String       @default("AI") // AI | MANUAL
+  origin         String       @default("DASHBOARD") // DASHBOARD | WHATSAPP
+  status         String       @default("PENDING_APPROVAL") // PENDING_APPROVAL | SENDING | SENT | REJECTED | FAILED
+  sentCount      Int          @default(0)
+  error          String?
+  waMessageId    String?
+  sentAt         DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([status])
+  @@index([waMessageId])
+}
+
+model Contact {
+  id        String        @id @default(cuid())
+  name      String        @default("")
+  email     String        @unique
+  tags      String        @default("")
+  createdAt DateTime      @default(now())
+  groups    GroupMember[]
+}
+
+model Group {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  description String        @default("")
+  createdAt   DateTime      @default(now())
+  members     GroupMember[]
+}
+
+model GroupMember {
+  groupId   String
+  contactId String
+  group     Group   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, contactId])
+}
+
+/// Conversation state for multi-step WhatsApp flows.
+model WaSession {
+  phone     String   @id
+  state     String   @default("IDLE") // IDLE | AWAIT_AI_PROMPT | AWAIT_MANUAL_TEXT | AWAIT_EDIT
+  emailId   String?
+  draftId   String?
+  updatedAt DateTime @updatedAt
+}
+
+/// Processed WhatsApp message ids (Meta can deliver a webhook more than once).
+model WaProcessed {
+  id        String   @id
+  createdAt DateTime @default(now())
+}
+
+/// Activity log shown in the dashboard.
+model ActivityLog {
+  id        String   @id @default(cuid())
+  type      String
+  message   String
+  createdAt DateTime @default(now())
+}
