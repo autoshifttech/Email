@@ -26,9 +26,9 @@ export function LoginForm({ setup }: { setup: boolean }) {
   };
 
   return (
-    <form onSubmit={submit} className="panel p-6 space-y-4">
+    <form onSubmit={submit} className="glass p-6 space-y-4 rise">
       <div>
-        <h2 className="font-bold">{setup ? "Create your owner account" : "Sign in"}</h2>
+        <h2 className="text-xl font-bold">{setup ? "Create your owner account" : "Sign in"}</h2>
         {setup && <p className="text-xs muted mt-1">First run: this account will own the dashboard.</p>}
       </div>
       {setup && (
@@ -42,7 +42,7 @@ export function LoginForm({ setup }: { setup: boolean }) {
       <Field label="Password" hint={setup ? "At least 8 characters" : undefined}>
         <input className="input" type="password" required minLength={setup ? 8 : 1} autoComplete={setup ? "new-password" : "current-password"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
       </Field>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-bad">{error}</p>}
       <button className="btn btn-primary w-full" disabled={busy}>
         {busy && <Spinner />} {setup ? "Create account" : "Sign in"}
       </button>

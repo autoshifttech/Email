@@ -3,7 +3,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useApi, timeAgo } from "@/lib/client";
-import { Badge, Empty, Loading, PageHeader, PriorityBadge } from "@/components/ui";
+import { Avatar, Badge, Empty, Loading, PageHeader, PriorityBadge } from "@/components/ui";
 
 type Row = {
   id: string; direction: string; fromName: string; fromAddress: string; to: string; subject: string; snippet: string; summary: string | null;
@@ -61,26 +61,29 @@ function Inbox() {
       </div>
       <div className="flex gap-1 overflow-x-auto mb-4 -mx-1 px-1">
         {BOXES.map((b) => (
-          <button key={b.id} onClick={() => nav({ box: b.id === "inbox" ? "" : b.id })} className={`btn btn-sm ${box === b.id ? "btn-primary" : ""}`}>{b.label}</button>
+          <button key={b.id} onClick={() => nav({ box: b.id === "inbox" ? "" : b.id })} className={`btn btn-sm ${box === b.id ? "chip-on" : ""}`}>{b.label}</button>
         ))}
       </div>
 
       {loading && !data ? <Loading /> : !data?.items.length ? (
         <Empty icon="📭" title="Nothing here" text={box === "inbox" ? "New emails show up automatically once an account is connected." : undefined} />
       ) : (
-        <div className="panel overflow-hidden">
+        <div className="glass overflow-hidden rise">
           {data.items.map((e) => (
-            <Link key={e.id} href={`/inbox/${e.id}`} className="block px-4 py-3 border-b border-app last:border-0 hover:bg-black/[.03] dark:hover:bg-white/[.03]">
-              <div className="flex items-center gap-2 min-w-0">
-                {!e.isRead && <span className="h-2 w-2 rounded-full bg-green-600 shrink-0" />}
-                <span className={`truncate ${e.isRead ? "" : "font-semibold"}`}>{e.direction === "OUT" ? `To: ${e.to}` : e.fromName || e.fromAddress}</span>
-                <span className="hidden sm:inline"><Badge>{e.account.label}</Badge></span>
-                <PriorityBadge p={e.priority} />
-                {e.notifiedAt && <span title="Sent to WhatsApp" className="text-xs">💬</span>}
-                <span className="ml-auto text-xs muted shrink-0">{timeAgo(e.receivedAt)}</span>
+            <Link key={e.id} href={`/inbox/${e.id}`} className="flex gap-3 px-4 md:px-5 py-3.5 border-b border-app last:border-0 hover-tint">
+              <Avatar name={e.direction === "OUT" ? e.to : e.fromName || e.fromAddress} size={40} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={`truncate ${e.isRead ? "text-white/85" : "font-bold"}`}>{e.direction === "OUT" ? `To: ${e.to}` : e.fromName || e.fromAddress}</span>
+                  <span className="hidden sm:inline"><Badge>{e.account.label}</Badge></span>
+                  <PriorityBadge p={e.priority} />
+                  {e.notifiedAt && <span title="Sent to WhatsApp" className="text-xs">💬</span>}
+                  <span className="ml-auto text-xs faint shrink-0">{timeAgo(e.receivedAt)}</span>
+                </div>
+                <div className={`text-sm truncate ${e.isRead ? "muted" : "font-semibold"}`}>{e.subject}</div>
+                <div className="text-xs faint line-clamp-2">{e.summary ? `✨ ${e.summary}` : e.snippet}</div>
               </div>
-              <div className={`text-sm truncate ${e.isRead ? "" : "font-medium"}`}>{e.subject}</div>
-              <div className="text-xs muted line-clamp-2">{e.summary ? `🤖 ${e.summary}` : e.snippet}</div>
+              {!e.isRead && <span className="mt-2 h-2.5 w-2.5 rounded-full bg-[#ff7a45] shadow-[0_0_10px_#ff7a45] shrink-0" aria-label="unread" />}
             </Link>
           ))}
         </div>

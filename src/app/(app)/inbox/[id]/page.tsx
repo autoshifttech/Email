@@ -25,7 +25,7 @@ export default function EmailDetail({ params }: { params: Promise<{ id: string }
     if (e && !e.isRead && e.direction === "IN") api(`/api/emails/${id}`, { method: "PATCH", body: { isRead: true } }).catch(() => {});
   }, [e, id]);
 
-  if (error) return <div className="panel p-6 text-red-600">{error}</div>;
+  if (error) return <div className="glass p-6 text-bad">{error}</div>;
   if (!e) return <Loading />;
 
   const act = async (name: string, fn: () => Promise<unknown>, ok: string) => {
@@ -63,7 +63,7 @@ export default function EmailDetail({ params }: { params: Promise<{ id: string }
         </div>
       </div>
 
-      <div className="panel p-5">
+      <div className="glass p-5">
         <h1 className="text-xl font-bold mb-2">{e.subject}</h1>
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <Badge>{e.account.label}</Badge>
@@ -78,8 +78,8 @@ export default function EmailDetail({ params }: { params: Promise<{ id: string }
           <div className="muted">{new Date(e.receivedAt).toLocaleString()}</div>
         </div>
         {e.summary && (
-          <div className="rounded-xl bg-green-50 dark:bg-green-900/20 p-4 mb-4 text-sm">
-            <div className="font-semibold text-green-800 dark:text-green-300 mb-1">🤖 AI summary</div>
+          <div className="rounded-xl glass-soft p-4 mb-4 text-sm">
+            <div className="font-semibold text-accent mb-1">🤖 AI summary</div>
             {e.summary}
           </div>
         )}
@@ -139,12 +139,12 @@ function ReplyBox({ email, onClose, onSent }: { email: Email; onClose: () => voi
   };
 
   return (
-    <div className="panel p-5 mt-4 space-y-3">
+    <div className="glass p-5 mt-4 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold">↩️ Reply from {email.account.address}</h2>
         <button className="btn btn-sm" onClick={onClose}>✕</button>
       </div>
-      <div className="rounded-xl bg-black/[.03] dark:bg-white/[.04] p-3 space-y-2">
+      <div className="rounded-xl glass-soft p-3 space-y-2">
         <label className="label">🤖 Ask AI to write {body && author === "AI" ? "/ change" : ""} the reply</label>
         <div className="flex flex-col sm:flex-row gap-2">
           <input className="input" placeholder='e.g. "accept the offer and ask for the contract by Friday"' value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), generate())} />

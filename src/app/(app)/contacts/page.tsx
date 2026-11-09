@@ -48,14 +48,14 @@ export default function ContactsPage() {
         </>}
       />
       <div className="grid lg:grid-cols-4 gap-5">
-        <div className="panel p-3 h-fit">
+        <div className="glass p-3 h-fit">
           <div className="label px-2 pt-1">Groups</div>
-          <button onClick={() => setGroupFilter("")} className={`w-full text-left rounded-lg px-3 py-2 text-sm ${!groupFilter ? "bg-green-50 dark:bg-green-900/30 font-semibold" : ""}`}>All contacts <span className="muted">({contacts?.length ?? 0})</span></button>
+          <button onClick={() => setGroupFilter("")} className={`w-full text-left rounded-lg px-3 py-2 text-sm ${!groupFilter ? "bg-white/20 font-semibold" : ""}`}>All contacts <span className="muted">({contacts?.length ?? 0})</span></button>
           {groups?.map((g) => (
-            <div key={g.id} className={`group flex items-center rounded-lg ${groupFilter === g.id ? "bg-green-50 dark:bg-green-900/30" : ""}`}>
+            <div key={g.id} className={`group flex items-center rounded-lg ${groupFilter === g.id ? "bg-white/20" : ""}`}>
               <button onClick={() => setGroupFilter(g.id)} className={`flex-1 text-left px-3 py-2 text-sm ${groupFilter === g.id ? "font-semibold" : ""}`}>{g.name} <span className="muted">({g.memberCount})</span></button>
               <button className="px-1 text-xs muted hover:text-current" title="Edit" onClick={() => setEditG(g)}>✏️</button>
-              <button className="px-2 text-xs muted hover:text-red-600" title="Delete" onClick={() => delGroup(g)}>🗑</button>
+              <button className="px-2 text-xs muted hover:text-rose-200" title="Delete" onClick={() => delGroup(g)}>🗑</button>
             </div>
           ))}
           {!groups?.length && <p className="text-xs muted px-3 py-2">No groups yet.</p>}
@@ -65,10 +65,10 @@ export default function ContactsPage() {
           {loading && !contacts ? <Loading /> : !filtered.length ? (
             <Empty icon="👥" title="No contacts" text="Add contacts one by one or import a CSV (name,email per line)." />
           ) : (
-            <div className="panel overflow-hidden">
+            <div className="glass overflow-hidden">
               {filtered.map((c) => (
                 <div key={c.id} className="flex items-center gap-3 px-4 py-3 border-b border-app last:border-0">
-                  <div className="h-9 w-9 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-sm font-bold text-blue-800 dark:text-blue-300 shrink-0">{(c.name || c.email).slice(0, 1).toUpperCase()}</div>
+                  <div className="h-9 w-9 rounded-full bg-white/20 border border-white/40 flex items-center justify-center text-sm font-bold text-white shrink-0">{(c.name || c.email).slice(0, 1).toUpperCase()}</div>
                   <div className="min-w-0 flex-1">
                     <div className="font-medium truncate">{c.name || "—"}</div>
                     <div className="text-sm muted truncate">{c.email}</div>

@@ -5,8 +5,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Nav />
-      <main className="md:pl-60 pb-24 md:pb-10">
-        <div className="mx-auto max-w-6xl px-4 md:px-8 pt-5 md:pt-8"><Suspense>{children}</Suspense></div>
+      <main className="md:pl-[17rem] pb-28 md:pb-10">
+        <div className="mx-auto max-w-6xl px-4 md:px-8 pt-6 md:pt-9"><Suspense>{children}</Suspense></div>
       </main>
     </>
   );

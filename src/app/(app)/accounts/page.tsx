@@ -47,16 +47,16 @@ export default function AccountsPage() {
         actions={<button className="btn btn-primary" onClick={() => setEditing({ form: { ...blank } })}>+ Add account</button>}
       />
       {welcome && !data?.length && (
-        <div className="panel p-4 mb-4 text-sm">👋 Welcome! Start by adding the email account you want forwarded to WhatsApp.</div>
+        <div className="glass p-4 mb-4 text-sm">👋 Welcome! Start by adding the email account you want forwarded to WhatsApp.</div>
       )}
       {loading && !data ? <Loading /> : !data?.length ? (
         <Empty icon="📧" title="No email accounts yet" text="Add Gmail, Outlook, Zoho or any IMAP/SMTP mailbox. New emails will be summarized and sent to your WhatsApp." action={<button className="btn btn-primary" onClick={() => setEditing({ form: { ...blank } })}>+ Add your first account</button>} />
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
           {data.map((a) => (
-            <div key={a.id} className="panel p-4 flex flex-col gap-3">
+            <div key={a.id} className="glass p-4 flex flex-col gap-3">
               <div className="flex items-start gap-3">
-                <div className="h-10 w-10 shrink-0 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center font-bold text-green-800 dark:text-green-300">
+                <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-[#ffb36b] to-[#ff4d8d] border-2 border-white/70 flex items-center justify-center font-bold text-accent">
                   {a.label.slice(0, 1).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -70,7 +70,7 @@ export default function AccountsPage() {
                   <div className="text-xs muted">{a.imapHost} · {a.lastSyncAt ? `synced ${timeAgo(a.lastSyncAt)}` : "never synced"}</div>
                 </div>
               </div>
-              {a.lastError && a.status === "error" && <div className="text-xs text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg p-2">{a.lastError}</div>}
+              {a.lastError && a.status === "error" && <div className="text-xs text-bad bg-rose-500/20 border border-rose-200/30 rounded-lg p-2">{a.lastError}</div>}
               <div className="flex flex-wrap gap-x-5 gap-y-2">
                 <Toggle checked={a.isActive} onChange={(v) => patch(a, { isActive: v })} label="Active" />
                 <Toggle checked={a.notifyOnWhatsApp} onChange={(v) => patch(a, { notifyOnWhatsApp: v })} label="WhatsApp alerts" />
@@ -140,11 +140,11 @@ function AccountForm({ initial, onClose, onSaved }: { initial: { id?: string; fo
         <Field label="Provider">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {MAIL_PRESETS.map((p) => (
-              <button type="button" key={p.id} onClick={() => applyPreset(p.id)} className={`btn btn-sm justify-start ${f.preset === p.id ? "ring-2 ring-green-600" : ""}`}>{p.name}</button>
+              <button type="button" key={p.id} onClick={() => applyPreset(p.id)} className={`btn btn-sm justify-start ${f.preset === p.id ? "chip-on" : ""}`}>{p.name}</button>
             ))}
           </div>
         </Field>
-        <div className="text-xs rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200 p-3">💡 {preset.help}</div>
+        <div className="text-xs rounded-lg glass-soft text-white/90 p-3">💡 {preset.help}</div>
         <div className="grid sm:grid-cols-2 gap-3">
           <Field label="Email address"><input className="input" type="email" required value={f.address} onChange={(e) => onAddress(e.target.value)} /></Field>
           <Field label="Label" hint="Short name shown in WhatsApp, e.g. Work"><input className="input" placeholder={f.address.split("@")[0] || "Work"} value={f.label} onChange={(e) => set("label", e.target.value)} /></Field>
@@ -154,9 +154,9 @@ function AccountForm({ initial, onClose, onSaved }: { initial: { id?: string; fo
           </Field>
         </div>
 
-        <button type="button" className="text-sm text-green-700 dark:text-green-400" onClick={() => setAdvanced(!advanced)}>{advanced ? "▾" : "▸"} Server settings</button>
+        <button type="button" className="text-sm text-accent font-semibold" onClick={() => setAdvanced(!advanced)}>{advanced ? "▾" : "▸"} Server settings</button>
         {advanced && (
-          <div className="grid sm:grid-cols-2 gap-3 panel p-3">
+          <div className="grid sm:grid-cols-2 gap-3 glass p-3">
             <Field label="Username"><input className="input" required value={f.username} onChange={(e) => set("username", e.target.value)} /></Field>
             <div />
             <Field label="IMAP host"><input className="input" required value={f.imapHost} onChange={(e) => set("imapHost", e.target.value)} /></Field>
@@ -184,8 +184,8 @@ function AccountForm({ initial, onClose, onSaved }: { initial: { id?: string; fo
 
         {test && (
           <div className="space-y-1 text-sm">
-            <div className={test.imap.ok ? "text-green-700 dark:text-green-400" : "text-red-600"}>{test.imap.ok ? "✅" : "❌"} IMAP (receive): {test.imap.message}</div>
-            <div className={test.smtp.ok ? "text-green-700 dark:text-green-400" : "text-red-600"}>{test.smtp.ok ? "✅" : "❌"} SMTP (send): {test.smtp.message}</div>
+            <div className={test.imap.ok ? "text-good" : "text-bad"}>{test.imap.ok ? "✅" : "❌"} IMAP (receive): {test.imap.message}</div>
+            <div className={test.smtp.ok ? "text-good" : "text-bad"}>{test.smtp.ok ? "✅" : "❌"} SMTP (send): {test.smtp.message}</div>
           </div>
         )}
         <div className="flex flex-wrap gap-2 justify-end pt-2">

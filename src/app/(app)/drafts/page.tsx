@@ -78,7 +78,7 @@ function DraftCard({ d, onChange }: { d: Draft; onChange: () => void }) {
   });
 
   return (
-    <div className="panel p-4">
+    <div className="glass p-4">
       <div className="flex flex-wrap items-center gap-2 mb-2">
         <StatusBadge s={d.status} />
         <Badge color="blue">{d.mode === "REPLY" ? "Reply" : d.mode === "BROADCAST" ? `Broadcast · ${recipients.length}` : "New email"}</Badge>
@@ -102,14 +102,14 @@ function DraftCard({ d, onChange }: { d: Draft; onChange: () => void }) {
           <textarea className="input" rows={10} value={body} onChange={(e) => setBody(e.target.value)} />
         </div>
       ) : (
-        <div className="rounded-xl bg-black/[.03] dark:bg-white/[.04] p-4">
+        <div className="rounded-xl glass-soft p-4">
           <div className="font-semibold mb-2">{subject}</div>
           <div className="prose-email">{body}</div>
         </div>
       )}
       {d.status === "SENDING" && <p className="text-sm mt-2"><Spinner /> Sent {d.sentCount}/{recipients.length}…</p>}
-      {d.status === "SENT" && <p className="text-sm mt-2 text-green-700 dark:text-green-400">✅ Sent to {d.sentCount} recipient(s) {d.sentAt && timeAgo(d.sentAt)}</p>}
-      {d.error && <pre className="text-xs text-red-600 mt-2 whitespace-pre-wrap">{d.error}</pre>}
+      {d.status === "SENT" && <p className="text-sm mt-2 text-accent font-semibold">✅ Sent to {d.sentCount} recipient(s) {d.sentAt && timeAgo(d.sentAt)}</p>}
+      {d.error && <pre className="text-xs text-bad mt-2 whitespace-pre-wrap">{d.error}</pre>}
       {editable && (
         <>
           <div className="flex flex-col sm:flex-row gap-2 mt-3">

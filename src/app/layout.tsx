@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ToastProvider } from "@/components/toast";
 import { RegisterSW } from "@/components/register-sw";
+import { Backdrop } from "@/components/backdrop";
 
 export const metadata: Metadata = {
   title: { default: "MailBridge", template: "%s · MailBridge" },
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#15803d",
+  themeColor: "#4b33ea",
   width: "device-width",
   initialScale: 1,
 };
@@ -20,7 +21,13 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+      </head>
       <body className="min-h-screen font-sans">
+        <Backdrop />
         <ToastProvider>{children}</ToastProvider>
         <RegisterSW />
       </body>

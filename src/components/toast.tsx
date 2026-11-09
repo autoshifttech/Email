@@ -14,12 +14,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <Ctx.Provider value={push}>
       {children}
-      <div className="fixed bottom-20 md:bottom-6 right-4 left-4 md:left-auto z-[100] flex flex-col gap-2 items-end pointer-events-none">
+      <div className="fixed bottom-28 md:bottom-6 right-4 left-4 md:left-auto z-[100] flex flex-col gap-2 items-end pointer-events-none">
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto max-w-sm w-full md:w-auto rounded-xl px-4 py-3 text-sm shadow-lg text-white ${
-              t.kind === "success" ? "bg-green-600" : t.kind === "error" ? "bg-red-600" : "bg-gray-800"
+            role="status"
+            className={`pointer-events-auto max-w-sm w-full md:w-auto rounded-2xl px-4 py-3 text-sm font-medium shadow-xl backdrop-blur-xl border ${
+              t.kind === "success" ? "bg-white text-[#2b1fb0] border-white" : t.kind === "error" ? "bg-[#d6265f]/90 text-white border-white/30" : "bg-[#2b1fb0]/85 text-white border-white/30"
             }`}
           >
             {t.text}

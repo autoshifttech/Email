@@ -69,7 +69,7 @@ export default function SettingsPage() {
     <>
       <PageHeader title="Settings" />
       <div className="space-y-5 max-w-3xl">
-        <section className="panel p-5 space-y-4">
+        <section className="glass p-5 space-y-4">
           <div>
             <h2 className="font-semibold">💬 WhatsApp (Meta Cloud API)</h2>
             <p className="text-sm muted">From developers.facebook.com → your app → WhatsApp → API Setup. See README for the step-by-step guide.</p>
@@ -94,7 +94,7 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="panel p-5 space-y-4">
+        <section className="glass p-5 space-y-4">
           <h2 className="font-semibold">🔔 Notification rules</h2>
           <Toggle checked={v.WA_NOTIFICATIONS_ENABLED !== "false"} onChange={(x) => set("WA_NOTIFICATIONS_ENABLED", x ? "true" : "false")} label="Forward new emails to WhatsApp" />
           <div className="grid sm:grid-cols-2 gap-3">
@@ -113,7 +113,7 @@ export default function SettingsPage() {
           <div className="flex justify-end"><button className="btn btn-primary" onClick={() => save("notify", NOTIFY)} disabled={busy === "notify"}>{busy === "notify" && <Spinner />} Save</button></div>
         </section>
 
-        <section className="panel p-5 space-y-4">
+        <section className="glass p-5 space-y-4">
           <h2 className="font-semibold">✍️ AI writing style</h2>
           <div className="grid sm:grid-cols-2 gap-3">
             <Field label="Your name (email sign-off)"><input className="input" value={v.OWNER_NAME ?? ""} onChange={(e) => set("OWNER_NAME", e.target.value)} /></Field>
@@ -123,7 +123,7 @@ export default function SettingsPage() {
           <div className="flex justify-end"><button className="btn btn-primary" onClick={() => save("ai", AI)} disabled={busy === "ai"}>{busy === "ai" && <Spinner />} Save</button></div>
         </section>
 
-        <form onSubmit={changePw} className="panel p-5 space-y-4">
+        <form onSubmit={changePw} className="glass p-5 space-y-4">
           <h2 className="font-semibold">🔒 Change password</h2>
           <div className="grid sm:grid-cols-2 gap-3">
             <Field label="Current password"><input className="input" type="password" required value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} /></Field>

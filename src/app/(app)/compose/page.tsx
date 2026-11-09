@@ -68,7 +68,7 @@ export default function ComposePage() {
     return (
       <>
         <PageHeader title="Compose" />
-        <div className="panel p-6 text-sm">Add an email account first. <a className="text-green-700 font-medium" href="/accounts">Go to Email Accounts →</a></div>
+        <div className="glass p-6 text-sm">Add an email account first. <a className="text-accent font-semibold font-medium" href="/accounts">Go to Email Accounts →</a></div>
       </>
     );
   }
@@ -77,7 +77,7 @@ export default function ComposePage() {
     <>
       <PageHeader title="Compose" subtitle="Write a new email yourself or let AI write it, to one person, a group or everyone" />
       <div className="grid lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2 panel p-5 space-y-4">
+        <div className="lg:col-span-2 glass p-5 space-y-4">
           <Field label="From">
             <select className="input" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
               {accounts?.map((a) => <option key={a.id} value={a.id}>{a.label} – {a.address}{a.isActive ? "" : " (disabled)"}</option>)}
@@ -97,7 +97,7 @@ export default function ComposePage() {
                 <select className="input" value={groupId} onChange={(e) => setGroupId(e.target.value)}>
                   {groups.map((g) => <option key={g.id} value={g.id}>{g.name} ({g.memberCount} members)</option>)}
                 </select>
-              ) : <p className="text-sm muted">No groups yet. <a className="text-green-700" href="/contacts">Create one →</a></p>
+              ) : <p className="text-sm muted">No groups yet. <a className="text-accent font-semibold" href="/contacts">Create one →</a></p>
             )}
             {broadcast && <p className="text-xs muted mt-1">Each recipient gets their own email (nobody sees the others). Use <code>{"{{name}}"}</code> to insert the contact&apos;s first name.</p>}
           </Field>
@@ -108,7 +108,7 @@ export default function ComposePage() {
             <button className="btn btn-primary" disabled={!subject || !body || !!busy || !recipientCount} onClick={() => submit(true)}>{busy === "send" && <Spinner />} Send {recipientCount > 1 ? `to ${recipientCount}` : "now"}</button>
           </div>
         </div>
-        <div className="panel p-5 h-fit space-y-3 lg:sticky lg:top-6">
+        <div className="glass p-5 h-fit space-y-3 lg:sticky lg:top-6">
           <h2 className="font-semibold">✨ Write with AI</h2>
           <p className="text-xs muted">Describe the email. The AI writes the subject and the message. You can edit everything before sending.</p>
           <textarea className="input" rows={6} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder={'e.g. "Invite the team to the product launch on 20 Nov at 5pm in the main hall, ask them to confirm by Friday"'} />

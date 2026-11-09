@@ -4,9 +4,13 @@
 
 MailBridge watches your email accounts in real time. When a new email arrives, the AI summarizes it and sends the summary to your WhatsApp. You can reply from WhatsApp in two ways: write the reply yourself, or tell the AI what to say ("accept, propose Tuesday 3pm"). Either way you get a draft, and **nothing is sent until you tap ✅ Send**. You can also send new emails to one person, a group, or all your contacts, from WhatsApp or from the web dashboard (which you can install on your phone as an app).
 
-| Overview | AI Keys | Approvals | Mobile |
-|---|---|---|---|
-| ![](docs/screenshots/d-overview.png) | ![](docs/screenshots/d-ai.png) | ![](docs/screenshots/d-drafts.png) | ![](docs/screenshots/m-inbox.png) |
+| Home | Insights | Approvals |
+|---|---|---|
+| ![](docs/screenshots/m-home.png) | ![](docs/screenshots/m-insights.png) | ![](docs/screenshots/m-drafts.png) |
+
+![Desktop dashboard](docs/screenshots/d-home.png)
+
+The UI uses a **glassmorphism** design: a vivid indigo background with glowing 3D ribbons, frosted-glass cards, big bold numbers, white pill buttons and a floating tab bar on mobile.
 
 ---
 
@@ -27,6 +31,8 @@ MailBridge watches your email accounts in real time. When a new email arrives, t
 - Broadcasts go out as **one personal email per recipient**, with `{{name}}` replaced by each contact's name
 
 **Dashboard (web + installable PWA)**
+- **Home**: greeting, unread count, today / this-week / approvals tiles with a 7-day trend line
+- **Insights**: pick any day to see emails received, sent, sent by AI and important, plus an emails-by-hour chart and top categories
 - **Email accounts**: add, edit, delete, enable/disable, set default, test connection, see live status
 - **AI Keys**: add, edit, delete, test and switch between AI providers and API keys (Groq, Gemini, OpenRouter, OpenAI, Ollama, any OpenAI-compatible API)
 - **Inbox**: all accounts or one, search, unread / important / sent / archived, AI summary, reply, AI reply, archive, delete (optionally on the server too), forward to WhatsApp
