@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { api, useApi } from "@/lib/client";
-import { IconChart, IconCheck, IconGear, IconGrid, IconHome, IconInbox, IconLogout, IconMail, IconPen, IconSpark, IconUsers } from "./icons";
+import { IconChart, IconCheck, IconGear, IconGrid, IconHome, IconInbox, IconLogout, IconMail, IconPhone, IconPen, IconSpark, IconUsers } from "./icons";
 
 type Item = { href: string; label: string; Icon: (p: { className?: string; size?: number }) => React.ReactElement; badge?: "unread" | "pending" };
 
@@ -20,7 +20,7 @@ const ITEMS: Item[] = [
 const MOBILE = ["/", "/inbox", "/compose", "/drafts", "/more"];
 const MORE_PATHS = ["/insights", "/accounts", "/contacts", "/ai", "/settings", "/more"];
 
-type Stats = { unread: number; pending: number };
+type Stats = { unread: number; pending: number; demo?: boolean };
 
 export function Nav() {
   const path = usePathname();
@@ -35,6 +35,11 @@ export function Nav() {
 
   return (
     <>
+      {data?.demo && (
+        <div role="status" className="fixed top-2 left-1/2 -translate-x-1/2 md:left-[calc(50%+8.5rem)] z-50 rounded-full bg-white text-[#2b1fb0] text-xs font-semibold px-3.5 py-1.5 shadow-xl whitespace-nowrap">
+          👀 Demo mode: sample data, changes aren&apos;t saved
+        </div>
+      )}
       {/* Desktop: floating glass sidebar */}
       <aside className="hidden md:flex fixed left-4 top-4 bottom-4 w-60 flex-col glass p-4 z-30">
         <Link href="/" className="flex items-center gap-2.5 px-2 mb-7 mt-1">
@@ -59,7 +64,8 @@ export function Nav() {
             );
           })}
         </nav>
-        <button onClick={logout} className="btn mt-auto"><IconLogout size={17} /> Log out</button>
+        <Link href="/download" className="btn mt-auto mb-2"><IconPhone size={17} /> Get the app</Link>
+        <button onClick={logout} className="btn"><IconLogout size={17} /> Log out</button>
       </aside>
 
       {/* Mobile: floating pill tab bar */}

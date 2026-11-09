@@ -60,6 +60,35 @@ Tables are created automatically by the migrations in `prisma/migrations` (`npm 
 
 ---
 
+## 👀 Demo mode (no database)
+
+If `DATABASE_URL` is not set (or `DEMO_MODE=true`), MailBridge runs in **demo mode**:
+- The whole dashboard opens without a login and shows realistic sample data.
+- Changes are not saved; you get a friendly message instead.
+- The Vercel build skips database migrations.
+
+Use it to preview a deployment before connecting Supabase. Add `DATABASE_URL` and redeploy to go live.
+
+---
+
+## 📱 Android app (APK)
+
+The `android/` folder contains a lightweight native app that opens your MailBridge site full-screen. It keeps you logged in and supports file uploads and the back button. Opening a `mailbridge://setup?url=…` link connects it automatically.
+
+- **Automatic builds:** every push that changes `android/` runs the **Android APK** GitHub workflow. It builds the APK and commits it to `public/downloads/`, so your site offers it at **`/download`**. You can also run it manually: GitHub → Actions → Android APK → Run workflow.
+- **Optional:** set the repository **variable** `APP_URL` to your site address so the app opens it with no setup.
+- **Recommended: a permanent signing key**, so future updates install over the old app. Without one, a cached debug key is used. Create a key:
+
+  ```bash
+  keytool -genkeypair -v -keystore mailbridge.jks -alias mailbridge -keyalg RSA -keysize 2048 -validity 10000
+  base64 -w0 mailbridge.jks
+  ```
+
+  Then add these repository secrets: `ANDROID_KEYSTORE_BASE64` (the base64 output), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` (`mailbridge`) and `ANDROID_KEY_PASSWORD`. Keep `mailbridge.jks` safe and never commit it.
+- **iPhone:** open the site in Safari → Share → **Add to Home Screen** (PWA).
+
+---
+
 ## ▲ Deploy on Vercel + Supabase (free)
 
 **1. Create the Supabase database**

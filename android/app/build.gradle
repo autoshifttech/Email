@@ -1,0 +1,55 @@
+plugins {
+    id "com.android.application"
+}
+
+// Optional build-time values (passed by the GitHub workflow):
+//   -PappUrl=https://your-app.vercel.app   default server address (users can still change it)
+//   -PversionCode=12 -PversionName=1.0.12
+def appUrl = (project.findProperty("appUrl") ?: "").toString().trim()
+def vCode = (project.findProperty("versionCode") ?: "1").toString().toInteger()
+def vName = (project.findProperty("versionName") ?: "1.0.0").toString()
+
+// Release signing from environment (stable key so updates install over the old app).
+def ksPath = System.getenv("ANDROID_KEYSTORE_PATH")
+def hasReleaseKey = ksPath != null && !ksPath.isEmpty() && file(ksPath).exists()
+
+android {
+    namespace "app.mailbridge"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "app.mailbridge"
+        minSdk 24
+        targetSdk 35
+        versionCode vCode
+        versionName vName
+        buildConfigField "String", "DEFAULT_URL", "\"" + appUrl.replace("\"", "") + "\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    signingConfigs {
+        if (hasReleaseKey) {
+            release {
+                storeFile file(ksPath)
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig hasReleaseKey ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

@@ -22,3 +22,5 @@ export const IconGrid = make(<><rect x="4" y="4" width="6.5" height="6.5" rx="2"
 export const IconLogout = make(<><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" /><path d="M10 16l-4-4 4-4M6 12h10" /></>);
 export const IconBack = make(<><path d="M15 5l-7 7 7 7" /></>);
 export const IconPlus = make(<><path d="M12 5v14M5 12h14" /></>);
+export const IconPhone = make(<><rect x="6.5" y="2.5" width="11" height="19" rx="2.5" /><path d="M10.5 18.5h3" /></>);
+export const IconDownload = make(<><path d="M12 4v11M7 10.5l5 5 5-5" /><path d="M5 20h14" /></>);

@@ -16,6 +16,7 @@ export default async function LoginPage() {
           <p className="muted text-center mt-2">Your inbox, summarized on WhatsApp.<br />AI replies, sent only with your approval.</p>
         </div>
         <Suspense><LoginForm setup={setup} /></Suspense>
+        <p className="text-center mt-5"><a href="/download" className="btn btn-sm">📱 Get the Android app</a></p>
       </div>
     </div>
   );

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand">#4B33EA</color>
+    <color name="brand_deep">#2F1FB8</color>
+    <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/brand</item>
+        <item name="android:colorPrimaryDark">@color/brand_deep</item>
+        <item name="android:colorAccent">#FF7A45</item>
+        <item name="android:statusBarColor">@color/brand_deep</item>
+        <item name="android:navigationBarColor">@color/brand_deep</item>
+        <item name="android:windowBackground">@drawable/splash</item>
+    </style>
+</resources>
