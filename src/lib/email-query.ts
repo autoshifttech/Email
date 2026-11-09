@@ -15,11 +15,11 @@ export async function queryEmails(f: EmailFilter) {
   }
   if (f.q) {
     where.OR = [
-      { subject: { contains: f.q } },
-      { fromAddress: { contains: f.q } },
-      { fromName: { contains: f.q } },
-      { to: { contains: f.q } },
-      { text: { contains: f.q } },
+      { subject: { contains: f.q, mode: "insensitive" } },
+      { fromAddress: { contains: f.q, mode: "insensitive" } },
+      { fromName: { contains: f.q, mode: "insensitive" } },
+      { to: { contains: f.q, mode: "insensitive" } },
+      { text: { contains: f.q, mode: "insensitive" } },
     ];
   }
   const pageSize = Math.min(f.pageSize ?? 30, 100);

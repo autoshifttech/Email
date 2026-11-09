@@ -7,10 +7,10 @@ import "./env";
 import type { EmailAccount } from "@prisma/client";
 import type { ImapFlow } from "imapflow";
 import { prisma, logActivity } from "../src/lib/db";
-import { accountToConfig, createImapClient, humanMailError, parseRaw } from "../src/lib/mail";
+import { accountToConfig, createImapClient, humanMailError } from "../src/lib/mail";
 import { processNewEmail } from "../src/lib/ingest";
+import { fetchNew, prepareSync, setAccountStatus as setStatus, BACKFILL } from "../src/lib/sync";
 
-const BACKFILL = Number(process.env.BACKFILL_COUNT ?? 20); // emails imported (not notified) on first connect
 const RECONCILE_MS = 15_000;
 
 type Watcher = { account: EmailAccount; client: ImapFlow | null; stopped: boolean; retry: number; timer?: NodeJS.Timeout; busy: Promise<void> };
@@ -19,81 +19,20 @@ const watchers = new Map<string, Watcher>();
 const log = (a: Pick<EmailAccount, "label">, ...m: unknown[]) => console.log(`[${new Date().toISOString()}] [${a.label}]`, ...m);
 const debug = (a: Pick<EmailAccount, "label">, ...m: unknown[]) => process.env.WORKER_DEBUG && log(a, ...m);
 
-async function setStatus(id: string, status: string, lastError: string | null = null) {
-  await prisma.emailAccount.update({ where: { id }, data: { status, lastError, ...(status === "connected" ? { lastSyncAt: new Date() } : {}) } }).catch(() => {});
-}
-
-async function storeMessage(account: EmailAccount, uid: number, source: Buffer, date: Date | undefined, seen: boolean) {
-  const p = await parseRaw(source, date);
-  if (p.messageId) {
-    const dup = await prisma.email.findFirst({ where: { accountId: account.id, messageId: p.messageId, direction: "IN" } });
-    if (dup) return null;
-  }
-  return prisma.email.create({
-    data: { accountId: account.id, direction: "IN", uid, mailbox: "INBOX", ...p, isRead: seen },
-  });
-}
-
-/** Fetch every message with UID greater than lastUid. */
+/** Fetch every message with UID greater than lastUid, then summarize + notify. */
 async function syncNew(w: Watcher, notify: boolean) {
-  const client = w.client;
-  if (!client) return;
-  const acc = await prisma.emailAccount.findUnique({ where: { id: w.account.id } });
-  if (!acc) return;
-  const lock = await client.getMailboxLock("INBOX");
-  const created: string[] = [];
-  let maxUid = acc.lastUid;
-  debug(acc, `fetching UID ${acc.lastUid + 1}:*`);
-  try {
-    for await (const msg of client.fetch(`${acc.lastUid + 1}:*`, { uid: true, source: true, internalDate: true, flags: true }, { uid: true })) {
-      if (msg.uid <= acc.lastUid || !msg.source) continue; // "N:*" always returns the last message
-      const internal = msg.internalDate ? new Date(msg.internalDate) : undefined;
-      const e = await storeMessage(acc, msg.uid, msg.source, internal, msg.flags?.has("\\Seen") ?? false);
-      if (e) created.push(e.id);
-      maxUid = Math.max(maxUid, msg.uid);
-    }
-  } finally {
-    lock.release();
-  }
-  if (maxUid !== acc.lastUid) await prisma.emailAccount.update({ where: { id: acc.id }, data: { lastUid: maxUid, lastSyncAt: new Date() } });
-  if (created.length) log(acc, `stored ${created.length} new email(s)`);
+  if (!w.client) return;
+  debug(w.account, "syncing new mail");
+  const created = await fetchNew(w.client, w.account.id);
+  if (created.length) log(w.account, `stored ${created.length} new email(s)`);
   if (notify) for (const id of created) await processNewEmail(id);
 }
 
-/** First connection: import the latest few messages for the dashboard without notifying. */
+/** First connection: import the latest few messages silently, or catch up on missed mail. */
 async function initialSync(w: Watcher) {
-  const client = w.client!;
-  const acc = (await prisma.emailAccount.findUnique({ where: { id: w.account.id } }))!;
-  const mailbox = client.mailbox;
-  if (!mailbox) return;
-  const validity = String(mailbox.uidValidity);
-  if (acc.uidValidity && acc.uidValidity !== validity) {
-    log(acc, "UIDVALIDITY changed – resetting sync position");
-    await prisma.emailAccount.update({ where: { id: acc.id }, data: { lastUid: 0 } });
-    acc.lastUid = 0;
-  }
-  if (acc.lastUid === 0) {
-    const uidNext = Number(mailbox.uidNext ?? 1);
-    const total = mailbox.exists ?? 0;
-    if (total > 0 && BACKFILL > 0) {
-      const lock = await client.getMailboxLock("INBOX");
-      try {
-        const from = Math.max(1, total - BACKFILL + 1);
-        for await (const msg of client.fetch(`${from}:*`, { uid: true, source: true, internalDate: true, flags: true })) {
-          if (!msg.source) continue;
-          await storeMessage(acc, msg.uid, msg.source, msg.internalDate ? new Date(msg.internalDate) : undefined, msg.flags?.has("\\Seen") ?? false);
-        }
-      } finally {
-        lock.release();
-      }
-    }
-    await prisma.emailAccount.update({ where: { id: acc.id }, data: { lastUid: uidNext - 1, uidValidity: validity } });
-    log(acc, `initial sync done (imported up to ${BACKFILL} recent emails)`);
-  } else {
-    if (!acc.uidValidity) await prisma.emailAccount.update({ where: { id: acc.id }, data: { uidValidity: validity } });
-    // Catch up on anything that arrived while we were offline – these DO notify.
-    await syncNew(w, true);
-  }
+  const first = await prepareSync(w.client!, w.account.id);
+  if (first) log(w.account, `initial sync done (imported up to ${BACKFILL()} recent emails)`);
+  else await syncNew(w, true); // mail that arrived while offline DOES notify
 }
 
 function queue(w: Watcher, fn: () => Promise<void>) {

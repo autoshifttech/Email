@@ -48,15 +48,55 @@ The UI uses a **glassmorphism** design: a vivid indigo background with glowing 3
 
 ---
 
-## 🗄️ Do I need a database?
+## 🗄️ Database
 
-**Yes, but you don't have to install anything.** MailBridge uses **SQLite**, a single file at `data/mailbridge.db` that is created automatically. It stores your accounts, emails, summaries, drafts, contacts, AI keys and settings. To use PostgreSQL instead, change `provider = "sqlite"` to `"postgresql"` in `prisma/schema.prisma` and set `DATABASE_URL`.
+MailBridge stores its data in **PostgreSQL**: accounts, emails, summaries, drafts, contacts, AI keys and settings. Any Postgres works:
+
+- **Supabase** (free tier). Recommended for Vercel, see below.
+- Neon or Vercel Postgres.
+- The Postgres container in `docker-compose.yml`.
+
+Tables are created automatically by the migrations in `prisma/migrations` (`npm run db:migrate`, which runs automatically on Vercel and in Docker).
+
+---
+
+## ▲ Deploy on Vercel + Supabase (free)
+
+**1. Create the Supabase database**
+1. Create a project at <https://supabase.com>.
+2. Open **Connect** (or Project Settings → Database → Connection string) and copy two URIs:
+   - **Transaction pooler** (port **6543**): use it as `DATABASE_URL` and add `?pgbouncer=true&connection_limit=1` to the end.
+   - **Session pooler** or **Direct connection** (port **5432**): use it as `DIRECT_URL`.
+   - Replace `[YOUR-PASSWORD]` with your database password. If the password has special characters, URL-encode them.
+
+**2. Import the repo on Vercel and add Environment Variables** (Project → Settings → Environment Variables)
+
+| Name | Value |
+|---|---|
+| `DATABASE_URL` | Supabase transaction pooler URI + `?pgbouncer=true&connection_limit=1` |
+| `DIRECT_URL` | Supabase session/direct URI (port 5432) |
+| `AUTH_SECRET` | output of `openssl rand -hex 32` |
+| `ENCRYPTION_KEY` | another `openssl rand -hex 32` (keep it safe, never change it) |
+| `APP_URL` | your Vercel URL, e.g. `https://email-yourname.vercel.app` |
+
+Deploy. The `vercel-build` script creates the database tables automatically.
+
+**3. Turn on automatic mail checking.** Vercel functions can't keep a mailbox connection open, so new mail is fetched by calling a sync URL on a schedule:
+1. Open your app → **Settings → 🔄 Automatic mail check** and copy the **Sync URL**.
+2. At <https://cron-job.org> (free), create a job that opens that URL every **1–2 minutes**.
+
+New emails then reach WhatsApp within a minute or two. You can also press **Sync now** on the Email Accounts page at any time.
+
+> Vercel's own Cron Jobs run at most once a day on the free Hobby plan, which is why an external scheduler is used.
+> If you want **instant** delivery (IMAP IDLE), run the worker on any always-on host (VPS, Railway, Render, Fly.io) with `npm run worker`, pointing at the same database. You can keep the dashboard on Vercel.
+
+**4.** Set the WhatsApp webhook to `https://<your-app>.vercel.app/api/whatsapp/webhook` (see "Connect WhatsApp" below).
 
 ---
 
 ## 🚀 Quick start (local)
 
-Requirements: **Node.js 20+**
+Requirements: **Node.js 20+** and a PostgreSQL database (local, Docker or Supabase)
 
 ```bash
 git clone https://github.com/autoshifttech/email.git
@@ -72,10 +112,10 @@ openssl rand -hex 32   # paste into AUTH_SECRET
 openssl rand -hex 32   # paste into ENCRYPTION_KEY
 ```
 
-Create the database, build, and run the web app and the email worker:
+Set `DATABASE_URL` and `DIRECT_URL` in `.env`, then create the tables, build, and run the web app and the email worker:
 
 ```bash
-npx prisma db push
+npm run db:migrate
 npm run build
 npm run start:all
 ```
@@ -90,6 +130,8 @@ Open **http://localhost:3000**, create your owner account, then follow the **"Fi
 cp .env.example .env    # set AUTH_SECRET, ENCRYPTION_KEY, APP_URL
 docker compose up -d --build
 ```
+
+This starts Postgres plus MailBridge (web app and real-time worker).
 
 ---
 
@@ -156,16 +198,15 @@ Every draft comes back with **✅ Send · ✏️ Edit · ❌ Cancel**. With **Ed
 
 ---
 
-## ☁️ Deploying
+## ☁️ Other hosting options
 
-MailBridge has two processes: the **web app** (Next.js) and the **worker** (keeps IMAP connections open). `npm run start:all` runs both. Use a host that runs a **long-lived process with a persistent disk**:
+| Host | Database | New-mail detection |
+|---|---|---|
+| **Vercel** (see above) | Supabase / Neon | Sync URL every 1–2 min (cron-job.org) |
+| **VPS** (Hetzner, DigitalOcean…) with `docker compose up -d` | bundled Postgres or Supabase | real-time worker (IMAP IDLE) |
+| **Railway / Render / Fly.io** (Dockerfile) | their Postgres or Supabase | real-time worker |
 
-- **VPS** (Hetzner, DigitalOcean, Lightsail…) with `docker compose up -d` and a reverse proxy (Caddy or Nginx) for HTTPS
-- **Railway / Render / Fly.io**: deploy the Dockerfile and mount a volume at `/app/data`
-
-> Serverless platforms such as Vercel can't keep the IMAP worker running. Deploy the worker elsewhere if you use one.
-
-Set `APP_URL` to your public HTTPS URL so the dashboard shows the correct webhook URL.
+Always set `APP_URL` to your public HTTPS URL so the dashboard shows the correct webhook and sync URLs.
 
 ---
 
@@ -176,12 +217,13 @@ npm test             # unit tests (command parser, crypto, webhook signatures, C
 npm run typecheck
 ```
 
-The end-to-end test runs a real IMAP server, a real SMTP server, the web app and the worker, with mock AI and WhatsApp APIs. It covers 47 checks: account CRUD, AI key management, incoming mail → summary → WhatsApp, AI reply → edit → approve → threaded send, cancel, broadcast, security checks and dashboard actions.
+The end-to-end test runs a real IMAP server, a real SMTP server, the web app and the worker, with mock AI and WhatsApp APIs. It covers 55 checks: account CRUD, AI key management, incoming mail → summary → WhatsApp, AI reply → edit → approve → threaded send, cancel, broadcast, security checks, dashboard actions and the serverless (Vercel) sync URL.
 
 ```bash
 pip install pymap                       # IMAP test server
 npm run build
-PYMAP=$(which pymap) npm run test:e2e
+# uses (and WIPES) a throwaway database, default postgres://postgres:postgres@localhost:5432/mailbridge_e2e
+PYMAP=$(which pymap) E2E_DATABASE_URL=postgresql://... npm run test:e2e
 ```
 
 ---
@@ -189,8 +231,9 @@ PYMAP=$(which pymap) npm run test:e2e
 ## 🗂️ Project structure
 
 ```
-prisma/schema.prisma          Database models (SQLite)
-worker/index.ts               IMAP IDLE watcher → store → AI summary → WhatsApp
+prisma/schema.prisma          Database models (PostgreSQL) + migrations/
+worker/index.ts               Real-time IMAP IDLE watcher (always-on hosts)
+src/lib/sync.ts               Mailbox sync shared by the worker and /api/cron/sync (Vercel)
 src/lib/
   ai.ts, ai-presets.ts        AI provider (OpenAI-compatible), summaries, drafts, revisions
   mail.ts, mail-presets.ts    IMAP/SMTP, parsing, sending, connection tests
@@ -207,6 +250,6 @@ tests/                        Unit + end-to-end tests
 
 ## Environment variables
 
-See [`.env.example`](.env.example). Only `DATABASE_URL`, `AUTH_SECRET`, `ENCRYPTION_KEY` and `APP_URL` are required. AI and WhatsApp settings can be managed entirely from the dashboard. Optional extras: `BACKFILL_COUNT` (emails imported on first connect, default 20), `BROADCAST_DELAY_MS` (pause between broadcast emails, default 1200), `MAIL_TLS_INSECURE=true` (allow self-signed mail servers).
+See [`.env.example`](.env.example). Only `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `ENCRYPTION_KEY` and `APP_URL` are required. AI and WhatsApp settings can be managed entirely from the dashboard. Optional extras: `CRON_SECRET` (sync URL key, auto-generated if empty), `SYNC_MAX_EMAILS` (emails processed per account per scheduled sync, default 10), `BACKFILL_COUNT` (emails imported on first connect, default 20), `BROADCAST_DELAY_MS` (pause between broadcast emails, default 1200), `MAIL_TLS_INSECURE=true` (allow self-signed mail servers).
 
 > ⚠️ Keep `ENCRYPTION_KEY` safe and don't change it. Stored passwords and keys can't be decrypted without it.

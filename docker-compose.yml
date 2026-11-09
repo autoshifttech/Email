@@ -1,14 +1,31 @@
 services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mailbridge
+      POSTGRES_PASSWORD: mailbridge
+      POSTGRES_DB: mailbridge
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mailbridge"]
+      interval: 5s
+      retries: 10
+
   mailbridge:
     build: .
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "3000:3000"
     env_file: .env
     environment:
-      DATABASE_URL: "file:/app/data/mailbridge.db"
-    volumes:
-      - mailbridge-data:/app/data
+      # Remove these two lines to use Supabase (or another hosted Postgres) from .env instead.
+      DATABASE_URL: "postgresql://mailbridge:mailbridge@db:5432/mailbridge"
+      DIRECT_URL: "postgresql://mailbridge:mailbridge@db:5432/mailbridge"
 
 volumes:
-  mailbridge-data:
+  db-data:

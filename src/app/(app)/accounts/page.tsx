@@ -32,6 +32,21 @@ export default function AccountsPage() {
       toast("error", (e as Error).message);
     }
   };
+  const [syncing, setSyncing] = useState<string | null>(null);
+  const sync = async (accountId?: string) => {
+    setSyncing(accountId ?? "all");
+    try {
+      const r = await api<{ results: { label: string; ok: boolean; newEmails: number; initial: boolean; error?: string }[] }>("/api/sync", { body: { accountId } });
+      const bad = r.results.filter((x) => !x.ok);
+      if (bad.length) toast("error", bad.map((x) => `${x.label}: ${x.error}`).join(" · "));
+      else toast("success", r.results.map((x) => `${x.label}: ${x.initial ? "first sync done" : `${x.newEmails} new`}`).join(" · ") || "No active accounts");
+      reload();
+    } catch (e) {
+      toast("error", (e as Error).message);
+    } finally {
+      setSyncing(null);
+    }
+  };
   const remove = async (a: Account) => {
     if (!confirm(`Delete ${a.address}? Its stored emails and drafts in MailBridge will be removed (nothing is deleted on the mail server).`)) return;
     await api(`/api/accounts/${a.id}`, { method: "DELETE" });
@@ -44,7 +59,10 @@ export default function AccountsPage() {
       <PageHeader
         title="Email Accounts"
         subtitle="Add, edit and manage the mailboxes MailBridge watches"
-        actions={<button className="btn btn-primary" onClick={() => setEditing({ form: { ...blank } })}>+ Add account</button>}
+        actions={<>
+          {!!data?.length && <button className="btn" disabled={!!syncing} onClick={() => sync()}>{syncing === "all" ? <Spinner /> : "🔄"} Sync all</button>}
+          <button className="btn btn-primary" onClick={() => setEditing({ form: { ...blank } })}>+ Add account</button>
+        </>}
       />
       {welcome && !data?.length && (
         <div className="glass p-4 mb-4 text-sm">👋 Welcome! Start by adding the email account you want forwarded to WhatsApp.</div>
@@ -77,6 +95,7 @@ export default function AccountsPage() {
               </div>
               <div className="flex flex-wrap gap-2 pt-1 border-t border-app mt-auto pt-3">
                 <a className="btn btn-sm" href={`/inbox?accountId=${a.id}`}>📥 Inbox</a>
+                {a.isActive && <button className="btn btn-sm" disabled={!!syncing} onClick={() => sync(a.id)}>{syncing === a.id ? <Spinner /> : "🔄"} Sync now</button>}
                 <button className="btn btn-sm" onClick={() => setEditing({ id: a.id, form: { ...blank, ...a, password: "" } })}>✏️ Edit</button>
                 {!a.isDefault && <button className="btn btn-sm" onClick={() => patch(a, { isDefault: true })}>⭐ Make default</button>}
                 <button className="btn btn-sm btn-danger ml-auto" onClick={() => remove(a)}>🗑 Delete</button>

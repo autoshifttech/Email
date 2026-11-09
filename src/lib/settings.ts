@@ -18,6 +18,7 @@ export const SETTINGS = {
   OWNER_NAME: { secret: false, env: "", default: "" },
   AI_TONE: { secret: false, env: "", default: "professional, friendly and concise" },
   AI_LANGUAGE: { secret: false, env: "", default: "same language as the original email" },
+  SYNC_SECRET: { secret: true, env: "CRON_SECRET", default: "" },
 } as const;
 
 export type SettingKey = keyof typeof SETTINGS;
@@ -56,9 +57,21 @@ export async function setSetting(key: SettingKey, value: string) {
 export async function getPublicSettings() {
   const out: Record<string, { value: string; secret: boolean; isSet: boolean; hint?: string }> = {};
   for (const key of Object.keys(SETTINGS) as SettingKey[]) {
+    if (key === "SYNC_SECRET") continue;
     const v = await getSetting(key);
     if (SETTINGS[key].secret) out[key] = { value: "", secret: true, isSet: !!v, hint: keyHint(v) };
     else out[key] = { value: v, secret: false, isSet: !!v };
   }
   return out;
+}
+
+/** Secret for the scheduled sync URL (env CRON_SECRET, or generated once and stored encrypted). */
+export async function getSyncSecret(): Promise<string> {
+  let v = await getSetting("SYNC_SECRET");
+  if (!v) {
+    const { randomBytes } = await import("node:crypto");
+    v = randomBytes(24).toString("base64url");
+    await setSetting("SYNC_SECRET", v);
+  }
+  return v;
 }

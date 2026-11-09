@@ -1,10 +1,10 @@
 /**
  * End-to-end test: real IMAP (pymap) + real SMTP + real Next.js app + real worker,
  * with mocked AI and WhatsApp APIs.  Run:  npx tsx tests/e2e/run.ts
- * Requires PYMAP env var pointing to a pymap binary (pip install pymap).
+ * Requires PYMAP env var pointing to a pymap binary (pip install pymap), psql, and a
+ * throwaway Postgres database (E2E_DATABASE_URL, default postgres://…/mailbridge_e2e) that is wiped.
  */
 import { spawn, execSync, type ChildProcess } from "node:child_process";
-import { rmSync } from "node:fs";
 import { createHmac } from "node:crypto";
 import nodemailer from "nodemailer";
 import { aiCalls, smtpOutbox, startAi, startSmtp, startWhatsApp, waOutbox } from "./mocks";
@@ -16,7 +16,8 @@ const OWNER = "919999999999";
 const APP_SECRET = "test-app-secret";
 const env = {
   ...process.env,
-  DATABASE_URL: "file:../data/e2e.db",
+  DATABASE_URL: process.env.E2E_DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/mailbridge_e2e",
+  DIRECT_URL: process.env.E2E_DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/mailbridge_e2e",
   AUTH_SECRET: "e2e-auth-secret-0123456789",
   ENCRYPTION_KEY: "e2e-encryption-key-0123456789",
   APP_URL: APP,
@@ -80,9 +81,9 @@ function start(cmd: string, args: string[], name: string) {
 async function main() {
   if (!process.env.PYMAP) throw new Error("Set PYMAP=/path/to/pymap");
   console.log("▶ preparing database");
-  rmSync("data/e2e.db", { force: true });
-  rmSync("data/e2e.db-journal", { force: true });
-  execSync("npx prisma db push --skip-generate", { env, stdio: "ignore" });
+  // Fresh schema in the dedicated e2e database (never point this at real data).
+  execSync(`psql "${env.DATABASE_URL}" -q -c "DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;"`, { stdio: "ignore" });
+  execSync("npx prisma migrate deploy", { env, stdio: "ignore" });
 
   console.log("▶ starting IMAP (pymap), SMTP, AI mock, WhatsApp mock");
   start(process.env.PYMAP, ["--host", "127.0.0.1", "--port", String(P.imap), "--no-tls", "dict", "--demo-data", "--demo-user", MAILBOX, "--demo-password", "pass"], "imap");
@@ -93,7 +94,7 @@ async function main() {
 
   console.log("▶ starting web app + worker");
   start("npx", ["next", "start", "-p", String(P.app)], "web");
-  start("npx", ["tsx", "worker/index.ts"], "worker");
+  const worker = start("npx", ["tsx", "worker/index.ts"], "worker");
   await waitFor(() => fetch(`${APP}/api/health`).then((r) => r.ok).catch(() => false), "web app", 60000);
 
   console.log("\n① Auth");
@@ -266,6 +267,30 @@ async function main() {
   ok(true, "disabling an account stops its watcher");
   await call(`/api/accounts/${acc.id}`, { method: "DELETE" });
   ok((await call("/api/accounts")).length === 0, "account deleted");
+
+  console.log("\n⑫ Serverless mode (Vercel): sync URL instead of the worker");
+  try { process.kill(-worker.pid!, "SIGKILL"); } catch { /* gone */ }
+  await sleep(500);
+  const settings2 = await call("/api/settings");
+  const syncUrl: string = settings2.syncUrl.replace(/^https?:\/\/[^/]+/, APP);
+  ok(/key=[\w-]{20,}/.test(syncUrl), "a secret sync URL is generated and shown in Settings");
+  const noKey = await fetch(`${APP}/api/cron/sync`);
+  const badKey = await fetch(`${APP}/api/cron/sync?key=wrong`);
+  ok(noKey.status === 401 && badKey.status === 401, "sync URL rejects missing/wrong key");
+  const acc2 = await call("/api/accounts", { body: { ...cfg, label: "Cloud" } });
+  const first = await (await fetch(syncUrl)).json();
+  ok(first.results[0].ok && first.results[0].initial && (await call(`/api/accounts/${acc2.id}`)).status === "connected", "first scheduled sync connects + imports silently");
+  const waN = waOutbox.length;
+  await sender.sendMail({ from: "Dana <dana@example.com>", to: MAILBOX, subject: "Serverless hello", text: "Does polling work?" });
+  await sleep(500);
+  const bearer = await (await fetch(`${APP}/api/cron/sync`, { headers: { Authorization: `Bearer ${new URL(syncUrl).searchParams.get("key")}` } })).json();
+  ok(bearer.results[0].newEmails === 1, "next scheduled sync (Bearer auth) picks up the new email");
+  ok(waOutbox.slice(waN).some((m: any) => waText(m).includes("Serverless hello")), "…and sends its WhatsApp summary");
+  const again = await (await fetch(syncUrl)).json();
+  ok(again.results[0].newEmails === 0, "repeat sync does not duplicate");
+  const manual = await call("/api/sync", { body: { accountId: acc2.id } });
+  ok(manual.results[0].ok, "dashboard 'Sync now' works");
+  ok((await call("/api/emails?q=serverless")).items.length === 1, "case-insensitive search on Postgres");
   ok(aiCalls.length > 0, `AI mock called ${aiCalls.length} times`);
 
   console.log(`\n🎉 All ${passed} checks passed`);

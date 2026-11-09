@@ -8,7 +8,7 @@ type S = Record<string, { value: string; secret: boolean; isSet: boolean; hint?:
 
 export default function SettingsPage() {
   const toast = useToast();
-  const { data, reload } = useApi<{ settings: S; webhookUrl: string }>("/api/settings");
+  const { data, reload } = useApi<{ settings: S; webhookUrl: string; syncUrl: string; serverless: boolean }>("/api/settings");
   const [v, setV] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [pw, setPw] = useState({ current: "", next: "" });
@@ -91,6 +91,32 @@ export default function SettingsPage() {
           <div className="flex flex-wrap gap-2 justify-end">
             <button className="btn" onClick={testWa} disabled={busy === "watest"}>{busy === "watest" && <Spinner />} Send test message</button>
             <button className="btn btn-primary" onClick={() => save("wa", WA)} disabled={busy === "wa"}>{busy === "wa" && <Spinner />} Save WhatsApp settings</button>
+          </div>
+        </section>
+
+        <section className="glass p-5 space-y-4">
+          <div>
+            <h2 className="font-semibold">🔄 Automatic mail check</h2>
+            <p className="text-sm muted mt-1">
+              {data.serverless
+                ? "You're on a serverless host (Vercel), which can't keep a mailbox connection open. Call this URL every 1–5 minutes to check for new mail."
+                : "The MailBridge worker watches your inboxes in real time. Only on serverless hosts (Vercel) do you need to call this URL on a schedule instead."}
+            </p>
+          </div>
+          <Field label="Sync URL (keep it private)" hint={<>Free scheduler: create a job at <a className="text-accent font-semibold" href="https://cron-job.org" target="_blank" rel="noreferrer">cron-job.org</a> that opens this URL every 2 minutes.</>}>
+            <div className="flex gap-2">
+              <input className="input text-xs font-mono" readOnly value={data.syncUrl} onFocus={(e) => e.target.select()} />
+              <button type="button" className="btn btn-sm" onClick={() => { navigator.clipboard.writeText(data.syncUrl); toast("success", "Copied"); }}>Copy</button>
+            </div>
+          </Field>
+          <div className="flex justify-end">
+            <button className="btn" disabled={busy === "sync"} onClick={async () => {
+              setBusy("sync");
+              try {
+                const r = await api<{ results: { label: string; ok: boolean; newEmails: number; error?: string }[] }>("/api/sync", { body: {} });
+                toast(r.results.every((x) => x.ok) ? "success" : "error", r.results.map((x) => `${x.label}: ${x.ok ? `${x.newEmails} new` : x.error}`).join(" · ") || "No active accounts");
+              } catch (e) { toast("error", (e as Error).message); } finally { setBusy(null); }
+            }}>{busy === "sync" && <Spinner />} Check all inboxes now</button>
           </div>
         </section>
 
