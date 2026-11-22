@@ -244,7 +244,7 @@ input[type="checkbox"] { accent-color: #ff7a45; width: 1.05rem; height: 1.05rem;
 .chips.more-right { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); }
 
 /* ---------- summary card ---------- */
-.summary { position: relative; margin-top: 46px; padding: 20px; }
+.summary { position: relative; margin-top: 18px; padding: 20px; }
 .sum-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .sum-big { display: flex; align-items: baseline; gap: 8px; margin-top: 6px; }
 .sum-big b { font-size: 3.2rem; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
@@ -366,7 +366,7 @@ input[type="checkbox"] { accent-color: #ff7a45; width: 1.05rem; height: 1.05rem;
 .toast {
   position: fixed; left: 50%; top: max(14px, env(safe-area-inset-top)); z-index: 90;
   display: flex; align-items: center; gap: 10px; width: max-content; max-width: calc(100vw - 32px);
-  padding: 11px 18px 11px 12px; border-radius: 22px; font-weight: 600; font-size: 0.92rem; line-height: 1.35;
+  padding: 11px 18px; border-radius: 22px; font-weight: 600; font-size: 0.92rem; line-height: 1.35;
   background: #fff; border: 1px solid #fff; color: var(--dark); box-shadow: 0 10px 26px rgba(10, 0, 60, 0.35);
   transform-origin: 28px 100%; transform: translate(-50%, -14px) scale(0.3) rotate(-5deg); opacity: 0; pointer-events: none;
   transition: transform 0.5s cubic-bezier(0.34, 1.8, 0.5, 1), opacity 0.15s ease;
@@ -377,7 +377,6 @@ input[type="checkbox"] { accent-color: #ff7a45; width: 1.05rem; height: 1.05rem;
 }
 .toast.show { transform: translate(-50%, 0) scale(1) rotate(0deg); opacity: 1; pointer-events: auto; animation: bubWob 0.7s ease 0.3s; }
 .toast.err { color: #a82020; }
-.toast .tface { flex: none; width: 34px; height: 21px; }
 @keyframes bubWob { 0%, 100% { rotate: 0deg; } 30% { rotate: -1.6deg; } 60% { rotate: 1.2deg; } }
 
 /* ---------- undo snackbar (just above the dock) ---------- */
@@ -397,7 +396,7 @@ input[type="checkbox"] { accent-color: #ff7a45; width: 1.05rem; height: 1.05rem;
 /* ---------- floating count chip (when the summary scrolls away) ---------- */
 .xchip {
   position: fixed; left: 50%; top: max(10px, env(safe-area-inset-top)); z-index: 35; overflow: hidden;
-  display: flex; align-items: center; gap: 8px; padding: 8px 16px 11px 10px; border-radius: 999px; white-space: nowrap;
+  display: flex; align-items: center; gap: 8px; padding: 8px 16px 11px; border-radius: 999px; white-space: nowrap;
   font-weight: 600; font-size: 0.9rem; color: #55555f;
   background: linear-gradient(150deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.82));
   -webkit-backdrop-filter: blur(18px) saturate(1.6); backdrop-filter: blur(18px) saturate(1.6);
@@ -478,7 +477,7 @@ input[type="checkbox"] { accent-color: #ff7a45; width: 1.05rem; height: 1.05rem;
 .shrug { display: inline-block; font-size: 2.2rem; line-height: 1; margin-bottom: 6px; animation: shrugWob 1.6s ease-in-out infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* gentle floating: only Pip, the dock and the summary card keep floating (calm page) */
+/* gentle floating: only the dock and the summary card keep floating (calm page) */
 @keyframes floatB { 0%, 100% { translate: 0 0; } 50% { translate: 0 -4px; } }
 @keyframes floatDock { 0%, 100% { translate: -50% 0; } 50% { translate: -50% -4px; } }
 .summary { animation: floatB 6s ease-in-out -1s infinite; }
@@ -552,47 +551,6 @@ body.tilt .summary { transform: perspective(900px) rotateX(var(--tx, 0deg)) rota
 .guard .gleg { transform-box: fill-box; transform-origin: 50% 0; animation: budLeg 0.5s ease-in-out infinite alternate; }
 .guard .gleg2 { animation-direction: alternate-reverse; }
 @keyframes budLeg { from { rotate: -16deg; } to { rotate: 16deg; } }
-
-/* ---------- mascot "Pip" peeks over the summary card ---------- */
-.pip { position: absolute; right: 26px; top: -46px; width: 84px; height: 50px; z-index: 3; cursor: pointer; transform-origin: 50% 100%; touch-action: manipulation; filter: drop-shadow(0 -3px 8px rgba(20, 0, 80, 0.35)); transition: rotate 0.3s var(--spring), scale 0.3s; animation: floatB 4.6s ease-in-out -1.3s infinite; }
-.pip svg { display: block; width: 100%; height: 100%; overflow: visible; transform-origin: 50% 100%; }
-.pip .eyes, .pip .eye, .pip .ant, .pip .hand, .pip .sweat, .pip .mouth, .pip .zz text { transform-box: fill-box; }
-.pip .eyes, .pip .eye { transform-origin: 50% 50%; }
-.pip .eyes { transition: transform 0.12s ease; }
-.pip .eye { transition: transform 0.18s cubic-bezier(0.34, 1.6, 0.5, 1); }
-.pip.blink .eyes { transform: scaleY(0.08); }
-.pip .pupil, .pip .shine { transition: transform 0.09s linear, opacity 0.2s; }
-.pip .mouth { transform-origin: 50% 0; }
-.pip .mouth.pop { animation: pipMouth 0.38s cubic-bezier(0.3, 1.6, 0.5, 1); }
-@keyframes pipMouth { 0% { transform: scale(0.6); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
-.pip .sweat { opacity: 0; transform-origin: 50% 0; }
-.pip[data-mood="worried"] .sweat, .pip[data-mood="sad"] .sweat { opacity: 1; animation: pipDrip 1.8s ease-in infinite; }
-@keyframes pipDrip { 0% { transform: translateY(-2px) scale(0.7); opacity: 0; } 25% { opacity: 1; transform: translateY(0) scale(1); } 80% { opacity: 1; } 100% { transform: translateY(7px) scale(0.9); opacity: 0; } }
-.pip .ant { transform-origin: 0 100%; animation: pipAnt 3.2s ease-in-out infinite; }
-@keyframes pipAnt { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(7deg); } }
-.pip[data-react="cheer"] .ant { animation: pipAntFast 0.28s ease-in-out infinite; }
-@keyframes pipAntFast { 0%, 100% { transform: rotate(-16deg); } 50% { transform: rotate(16deg); } }
-.pip .hand { transform-origin: 50% 100%; transition: transform 0.4s cubic-bezier(0.34, 1.7, 0.5, 1); }
-.pip[data-react="cheer"] .hl { transform: translate(-3px, -20px) rotate(-24deg); }
-.pip[data-react="cheer"] .hr { transform: translate(3px, -20px) rotate(24deg); }
-.pip[data-react="salute"] .hr { transform: translate(-9px, -22px) rotate(-35deg); }
-.pip[data-react="wink"] .eye:nth-child(2) { transform: scaleY(0.1); }
-.pip[data-react="gasp"] .eye { transform: scale(1.14); }
-.pip[data-react="squint"] .eye { transform: scaleY(0.5); }
-.pip[data-mood="sleep"] .eyes { transform: scaleY(0.1); }
-.pip[data-mood="sleep"] .pupil, .pip[data-mood="sleep"] .shine { opacity: 0; }
-.pip .zz { opacity: 0; font: 700 9px "Plus Jakarta Sans", system-ui, sans-serif; fill: #fff; }
-.pip[data-mood="sleep"] .zz { opacity: 1; }
-.pip .zz text { transform-origin: 50% 100%; opacity: 0; }
-.pip[data-mood="sleep"] .zz text { animation: pipZ 2.6s ease-in-out infinite; }
-.pip .zz text:nth-child(2) { animation-delay: 0.8s; font-size: 11px; }
-.pip .zz text:nth-child(3) { animation-delay: 1.6s; font-size: 13px; }
-@keyframes pipZ { 0% { opacity: 0; transform: translate(0, 0) scale(0.5); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(9px, -16px) scale(1.15); } }
-.pip .cos { display: none; }
-.pip[data-tm="day"] .sun { display: block; }
-.pip[data-tm="night"] .cap { display: block; }
-.pip .mag { position: absolute; left: -12px; top: 4px; font-size: 18px; font-style: normal; opacity: 0; pointer-events: none; transform: scale(0.4) rotate(-20deg); transition: opacity 0.2s, transform 0.35s cubic-bezier(0.34, 1.8, 0.5, 1); }
-.pip[data-react="squint"] .mag { opacity: 1; transform: scale(1) rotate(-12deg); }
 
 /* ---------- reduced motion: keep gentle fades only ---------- */
 @media (prefers-reduced-motion: reduce) {

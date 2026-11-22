@@ -1,6 +1,5 @@
 "use client";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { PipFace } from "./pip";
 
 type Kind = "success" | "error" | "info";
 type ToastFn = (kind: Kind, text: string) => void;
@@ -9,7 +8,7 @@ type UndoFn = (text: string, onUndo: () => void) => void;
 const ToastCtx = createContext<ToastFn>(() => {});
 const UndoCtx = createContext<UndoFn>(() => {});
 
-/** Speech-bubble toast from the top (Pip talks while it shows) + undo snackbar above the dock. */
+/** Speech-bubble toast from the top + undo snackbar above the dock. */
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [t, setT] = useState<{ id: number; kind: Kind; text: string } | null>(null);
   const [show, setShow] = useState(false);
@@ -40,7 +39,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <UndoCtx.Provider value={showUndo}>
         {children}
         <div className={`toast ${show ? "show" : ""} ${t?.kind === "error" ? "err" : ""}`} role="status" aria-live="polite" onClick={() => setShow(false)}>
-          {t && <><PipFace className="tface" /><span>{t.text}</span></>}
+          {t && <span>{t.text}</span>}
         </div>
         <div className={`xundo ${undo ? "show" : ""}`} role="status" aria-live="polite">
           <span>{undo?.text}</span>

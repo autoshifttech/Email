@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import { pip, reduced } from "@/lib/fx";
+import { reduced } from "@/lib/fx";
 
 const GLASS = ".btn,.circle,.mini,.chip,.pill,.day,.dock a";
 
@@ -10,10 +9,9 @@ const GLASS = ".btn,.circle,.mini,.chip,.pill,.day,.dock a";
  *  - liquid-glass lens refraction on Chromium + the touch light that follows your finger
  *  - scroll reveal for every .rv / .rise element (auto-registers new ones)
  *  - blob parallax, smooth wheel scrolling on desktop
- *  - idle detection (Pip dozes, blobs breathe), phone tilt, offline bar
+ *  - idle detection (the blobs breathe), phone tilt, offline bar
  */
 export function MotionRoot() {
-  const path = usePathname();
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
@@ -65,7 +63,7 @@ export function MotionRoot() {
     const smooth = !reduced() && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     if (smooth) window.addEventListener("wheel", onWheel, { passive: false });
 
-    // idle: after 25s without input Pip dozes and the blobs breathe
+    // idle: after 25s without input the blobs breathe
     let lastIn = performance.now(), asleep = false;
     const poke = () => {
       lastIn = performance.now();
@@ -81,7 +79,7 @@ export function MotionRoot() {
     const evs = ["pointermove", "pointerdown", "keydown", "scroll"] as const;
     evs.forEach((ev) => window.addEventListener(ev, poke, { passive: true }));
 
-    // tilt the phone: the summary card sways a little and Pip's eyes follow
+    // tilt the phone: the summary card sways a little
     let tx = 0, ty = 0;
     const ori = (e: DeviceOrientationEvent) => {
       if (e.gamma == null || reduced()) return;
@@ -153,8 +151,6 @@ export function MotionRoot() {
     return () => { io.disconnect(); mo.disconnect(); };
   }, []);
 
-  // a little hello from Pip on every page change
-  useEffect(() => { pip.react("wink", "happy", 600); }, [path]);
 
   return (
     <>

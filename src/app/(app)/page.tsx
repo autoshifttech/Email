@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { api, useApi } from "@/lib/client";
 import { anim, celebrate, pip, vib } from "@/lib/fx";
-import { Pip, PipFace, type PipMood } from "@/components/pip";
 import { RollNumber, Ring, StatBar, WeekStrip, isoDay } from "@/components/motion";
 import { EmailRow, useBlinkingBeads, type RowEmail } from "@/components/email-row";
 import { Loading } from "@/components/ui";
@@ -45,7 +44,6 @@ export default function Home() {
   const shown = groups[filter];
   const total = inbox.length, read = inbox.filter((e) => e.isRead).length;
   const pct = total ? (read / total) * 100 : 100;
-  const mood: PipMood = !total ? "happy" : read / total >= 0.85 ? "happy" : read / total >= 0.65 ? "ok" : read / total >= 0.4 ? "worried" : "sad";
 
   // floating count chip once the summary card scrolls away
   useEffect(() => {
@@ -56,7 +54,7 @@ export default function Home() {
     return () => io.disconnect();
   }, [data]);
 
-  // pull down at the top: Pip stretches and pulls a fresh list in
+  // pull down at the top to refresh: the rows drop in again
   useEffect(() => {
     let y0: number | null = null, x0 = 0, isArmed = false;
     const start = (e: TouchEvent) => { y0 = e.touches.length === 1 && window.scrollY <= 0 ? e.touches[0].clientY : null; x0 = e.touches[0].clientX; isArmed = false; };
@@ -174,7 +172,6 @@ export default function Home() {
       </div>
 
       <section ref={summaryRef} className="card summary rv" aria-label="Summary">
-        <Pip mood={mood} />
         <div className="sum-top">
           <div>
             <p className="muted">Read</p>
@@ -219,7 +216,6 @@ export default function Home() {
       )}
 
       <button type="button" className={`xchip ${chipOn ? "show" : ""}`} onClick={() => summaryRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })} aria-label="Back to summary">
-        <PipFace className="w-[30px] h-[18px]" />
         Read <b>{read}/{total}</b>{groups.unread.length > 0 && <small>{groups.unread.length} unread</small>}
         <i style={{ width: `${pct}%` }} />
       </button>
