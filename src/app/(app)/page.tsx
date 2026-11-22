@@ -1,176 +1,233 @@
 "use client";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useApi, timeAgo } from "@/lib/client";
-import { Avatar, Badge, Loading, PriorityBadge, Tile } from "@/components/ui";
-import { Sparkline } from "@/components/charts";
+import { api, useApi } from "@/lib/client";
+import { anim, celebrate, pip, vib } from "@/lib/fx";
+import { Pip, PipFace, type PipMood } from "@/components/pip";
+import { RollNumber, Ring, StatBar, WeekStrip, isoDay } from "@/components/motion";
+import { EmailRow, useBlinkingBeads, type RowEmail } from "@/components/email-row";
+import { Loading } from "@/components/ui";
+import { useToast, useUndo } from "@/components/toast";
 
-type Stats = {
-  ownerName: string;
-  accounts: number; connected: number; unread: number; inboxTotal: number; today: number; pending: number; sentToday: number; contacts: number;
-  week: { date: string; value: number }[];
-  ai: { name: string; model: string; source: string } | null;
-  whatsapp: boolean;
-  activity: { id: string; type: string; message: string; createdAt: string }[];
-};
-type EmailRow = { id: string; fromName: string; fromAddress: string; subject: string; summary: string | null; snippet: string; priority: string | null; isRead: boolean; receivedAt: string; account: { label: string } };
+type Stats = { ownerName: string; pending: number; sentToday: number; accounts: number; ai: unknown; whatsapp: boolean; demo?: boolean };
+type List = { total: number; items: (RowEmail & { isArchived: boolean })[] };
+type Filter = "all" | "unread" | "important" | "sent";
+
+const tz = () => new Date().getTimezoneOffset();
+const addDays = (iso: string, n: number) => { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + n); return isoDay(d); };
+
+export default function Home() {
+  const toast = useToast();
+  const showUndo = useUndo();
+  const today = isoDay(new Date());
+  const [date, setDate] = useState(today);
+  const [filter, setFilter] = useState<Filter>("all");
+  const { data: stats } = useApi<Stats>("/api/stats", { poll: 30_000 });
+  const weekStart = addDays(date, -new Date(date + "T00:00:00").getDay());
+  const { data: days } = useApi<{ counts: number[] }>(`/api/days?from=${weekStart}&days=7&tz=${tz()}`, { poll: 60_000 });
+  const { data, setData, reload } = useApi<List>(`/api/emails?box=any&date=${date}&tz=${tz()}&pageSize=100`, { poll: 20_000 });
+
+  const listRef = useRef<HTMLDivElement>(null);
+  const summaryRef = useRef<HTMLElement>(null);
+  const [chipOn, setChipOn] = useState(false);
+  const [armed, setArmed] = useState(false);
+  useEffect(useBlinkingBeads(listRef), []);
+
+  // the day's emails, split into the chip groups
+  const all = useMemo(() => (data?.items ?? []).filter((e) => !(e.direction === "IN" && e.isArchived)), [data]);
+  const inbox = all.filter((e) => e.direction === "IN");
+  const groups: Record<Filter, typeof all> = {
+    all: inbox,
+    unread: inbox.filter((e) => !e.isRead),
+    important: inbox.filter((e) => e.priority === "high" || e.priority === "urgent"),
+    sent: all.filter((e) => e.direction === "OUT"),
+  };
+  const shown = groups[filter];
+  const total = inbox.length, read = inbox.filter((e) => e.isRead).length;
+  const pct = total ? (read / total) * 100 : 100;
+  const mood: PipMood = !total ? "happy" : read / total >= 0.85 ? "happy" : read / total >= 0.65 ? "ok" : read / total >= 0.4 ? "worried" : "sad";
+
+  // floating count chip once the summary card scrolls away
+  useEffect(() => {
+    const el = summaryRef.current;
+    if (!el || !("IntersectionObserver" in window)) return;
+    const io = new IntersectionObserver(([en]) => setChipOn(!en.isIntersecting && en.boundingClientRect.top < 0));
+    io.observe(el);
+    return () => io.disconnect();
+  }, [data]);
+
+  // pull down at the top: Pip stretches and pulls a fresh list in
+  useEffect(() => {
+    let y0: number | null = null, x0 = 0, isArmed = false;
+    const start = (e: TouchEvent) => { y0 = e.touches.length === 1 && window.scrollY <= 0 ? e.touches[0].clientY : null; x0 = e.touches[0].clientX; isArmed = false; };
+    const move = (e: TouchEvent) => {
+      if (y0 === null) return;
+      const dy = e.touches[0].clientY - y0, dx = e.touches[0].clientX - x0;
+      if (dy <= 0 || Math.abs(dx) > dy || window.scrollY > 0) return;
+      pip.stretch(Math.min(dy, 110) / 110);
+      const a = dy >= 80;
+      if (a !== isArmed) { isArmed = a; pip.react(a ? "cheer" : "wink", a ? "grin" : "ok", 4000); }
+    };
+    const end = () => {
+      if (y0 === null) return;
+      pip.stretch(0);
+      if (isArmed) {
+        listRef.current?.querySelectorAll<HTMLElement>(".row").forEach((r, i) => { r.classList.remove("in"); r.style.setProperty("--d", i * 40 + "ms"); void r.offsetWidth; r.classList.add("in"); });
+        pip.hop(true); pip.react("cheer", "grin", 900); vib(12);
+        reload();
+      }
+      y0 = null; isArmed = false;
+    };
+    document.addEventListener("touchstart", start, { passive: true });
+    document.addEventListener("touchmove", move, { passive: true });
+    document.addEventListener("touchend", end, { passive: true });
+    document.addEventListener("touchcancel", end, { passive: true });
+    return () => {
+      document.removeEventListener("touchstart", start); document.removeEventListener("touchmove", move);
+      document.removeEventListener("touchend", end); document.removeEventListener("touchcancel", end);
+    };
+  }, [reload]);
+
+  const patch = (id: string, body: Record<string, boolean>) => api(`/api/emails/${id}`, { method: "PATCH", body });
+  const local = (id: string, p: Partial<RowEmail & { isArchived: boolean }>) =>
+    setData((d) => (d ? { ...d, items: d.items.map((x) => (x.id === id ? { ...x, ...p } : x)) } : d));
+
+  const onSwipe = async (e: RowEmail, action: "read" | "archive") => {
+    const wasUnread = !e.isRead;
+    try {
+      if (action === "read") {
+        local(e.id, { isRead: true });
+        await patch(e.id, { isRead: true });
+        pip.react("wink", "happy", 700);
+        if (wasUnread && groups.unread.length === 1) { celebrate(summaryRef.current); pip.dance(); }
+      } else {
+        local(e.id, { isArchived: true });
+        await patch(e.id, { isArchived: true });
+        pip.react("gasp", "gasp", 650);
+        showUndo("Archived “" + e.subject.slice(0, 28) + "”", async () => { local(e.id, { isArchived: false }); await patch(e.id, { isArchived: false }); pip.hop(); });
+      }
+    } catch (err) {
+      toast("error", (err as Error).message);
+      reload();
+    }
+  };
+
+  const markAllRead = async () => {
+    if (!armed) { setArmed(true); setTimeout(() => setArmed(false), 3000); return; }
+    setArmed(false);
+    const ids = groups.unread.map((e) => e.id);
+    if (!ids.length) return;
+    try {
+      ids.forEach((id) => local(id, { isRead: true }));
+      await Promise.all(ids.map((id) => patch(id, { isRead: true })));
+      // rows hop in a wave, then the big check + confetti
+      const vh = innerHeight;
+      let n = 0;
+      listRef.current?.querySelectorAll(".row").forEach((r) => {
+        const q = r.getBoundingClientRect();
+        if (q.bottom < 0 || q.top > vh || n >= 24) return;
+        anim(r, [{ transform: "translateY(0) scale(1,1)" }, { transform: "translateY(-14px) scale(.96,1.08)", offset: 0.4 }, { transform: "translateY(2px) scale(1.04,.95)", offset: 0.7 }, { transform: "none" }], { duration: 520, delay: n++ * 45, easing: "ease-out" });
+      });
+      setTimeout(() => celebrate(summaryRef.current), 300);
+      toast("success", `Marked ${ids.length} email${ids.length === 1 ? "" : "s"} as read`);
+    } catch (err) {
+      toast("error", (err as Error).message);
+      reload();
+    }
+  };
+
+  const dt = new Date(date + "T00:00:00");
+  const weekDays = Array.from({ length: 7 }, (_, i) => ({ iso: addDays(weekStart, i), has: (days?.counts?.[i] ?? 0) > 0 }));
+  const chips: [Filter, string][] = [["all", "All"], ["unread", "Unread"], ["important", "Important"], ["sent", "Sent"]];
+  const setupLeft = stats ? [!stats.accounts && ["Add an email account", "/accounts"], !stats.ai && ["Add a free AI key", "/ai"], !stats.whatsapp && ["Connect WhatsApp", "/settings"]].filter(Boolean) as [string, string][] : [];
+
+  return (
+    <>
+      {stats && (
+        <p className="text-[1.65rem] md:text-[2rem] font-semibold leading-tight mb-5 rv">
+          {greeting()}, {stats.ownerName || "there"}!
+        </p>
+      )}
+
+      <div className="daterow rv">
+        <h2>{dt.getDate()} {dt.toLocaleDateString(undefined, { month: "long" })}, {dt.getFullYear()}</h2>
+        <div className="flex items-center gap-2">
+          {date !== today && <button type="button" className="pill text-[var(--orange-ink)] !py-2 !px-3.5 text-sm" onClick={() => setDate(today)}>Today</button>}
+          <button type="button" className="mini" aria-label="Previous day" onClick={() => setDate(addDays(date, -1))}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+          </button>
+          <button type="button" className="mini" aria-label="Next day" disabled={date >= today} onClick={() => date < today && setDate(addDays(date, 1))}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+          </button>
+        </div>
+      </div>
+
+      <div className="rv"><WeekStrip days={weekDays} value={date} onChange={setDate} /></div>
+
+      <div className="chips rv" role="group" aria-label="Show emails">
+        {chips.map(([k, label]) => (
+          <button key={k} type="button" className="chip" aria-pressed={filter === k} onClick={() => { setFilter(k); vib(8); if (!groups[k].length) pip.react("wink", "worried", 1200); }}>
+            {label} <small>{groups[k].length}</small>
+            {filter === k && <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="9" /><path d="m8 12.5 2.8 2.8L16.5 9.5" /></svg>}
+          </button>
+        ))}
+      </div>
+
+      <section ref={summaryRef} className="card summary rv" aria-label="Summary">
+        <Pip mood={mood} />
+        <div className="sum-top">
+          <div>
+            <p className="muted">Read</p>
+            <div className="sum-big"><b><RollNumber value={read} /></b><span>/ {total} email{total === 1 ? "" : "s"}</span></div>
+            {!!stats?.pending && <Link href="/drafts" className="inline-flex mt-3 text-sm font-semibold text-[var(--orange-ink)]">⏳ {stats.pending} draft{stats.pending === 1 ? "" : "s"} awaiting approval →</Link>}
+          </div>
+          <Ring pct={pct} />
+        </div>
+        <div className="stats">
+          <StatBar title="Read" value={read} total={total} color="#ffb23d" buddy="rocket" />
+          <StatBar title="Important" value={groups.important.length} total={total} color="#e03c3c" buddy="snail" />
+          <StatBar title="Replied" value={groups.sent.length} total={Math.max(total, groups.sent.length)} color="#f5b800" buddy="guard" />
+        </div>
+      </section>
+
+      {setupLeft.length > 0 && (
+        <div className="card p-4 mt-5 rv">
+          <p className="font-semibold mb-2">🚀 Finish setting up</p>
+          <div className="flex flex-wrap gap-2">{setupLeft.map(([l, h]) => <Link key={h} href={h} className="pill text-sm">{l} →</Link>)}</div>
+        </div>
+      )}
+
+      <div className="sec mt-7 rv">
+        <h2>Emails <small>{shown.length}</small></h2>
+        <button type="button" className={`pill ${armed ? "text-[var(--orange-ink)]" : ""}`} onClick={markAllRead} disabled={!groups.unread.length}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M18 6 7 17l-5-5" /><path d="m22 10-7.5 7.5L13 16" /></svg>
+          {armed ? "Tap again to confirm" : "Mark all read"}
+        </button>
+      </div>
+      <p className="small mb-3 rv">Tap to open · swipe right = Read · swipe left = Archive</p>
+
+      {!data ? <Loading /> : !shown.length ? (
+        <div className="card p-8 text-center rv">
+          <div className="shrug" aria-hidden>🤷</div>
+          <p className="font-semibold">{filter === "unread" && total ? "All caught up!" : "No emails here"}</p>
+          <p className="small mt-1">{date === today ? "New emails appear here the moment they arrive." : "Nothing for this day."}</p>
+        </div>
+      ) : (
+        <div className="list two" ref={listRef}>
+          {shown.map((e) => <EmailRow key={e.id} e={e} onSwipe={e.direction === "IN" ? onSwipe : undefined} />)}
+        </div>
+      )}
+
+      <button type="button" className={`xchip ${chipOn ? "show" : ""}`} onClick={() => summaryRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })} aria-label="Back to summary">
+        <PipFace className="w-[30px] h-[18px]" />
+        Read <b>{read}/{total}</b>{groups.unread.length > 0 && <small>{groups.unread.length} unread</small>}
+        <i style={{ width: `${pct}%` }} />
+      </button>
+    </>
+  );
+}
 
 function greeting() {
   const h = new Date().getHours();
-  return h < 5 ? "Good Night" : h < 12 ? "Good Morning" : h < 17 ? "Good Day" : "Good Evening";
-}
-
-export default function Home() {
-  const { data: s } = useApi<Stats>("/api/stats", { poll: 20_000 });
-  const { data: recent } = useApi<{ items: EmailRow[] }>("/api/emails?box=inbox", { poll: 20_000 });
-  if (!s) return <Loading />;
-
-  const name = s.ownerName || "there";
-  const weekTotal = s.week.reduce((a, b) => a + b.value, 0);
-  const weekData = s.week.map((d) => ({ label: new Date(d.date).toLocaleDateString(undefined, { weekday: "short" }), value: d.value }));
-  const setup = [
-    { done: s.accounts > 0, label: "Add an email account", href: "/accounts" },
-    { done: !!s.ai, label: "Add a free AI key", href: "/ai" },
-    { done: s.whatsapp, label: "Connect WhatsApp", href: "/settings" },
-    { done: s.contacts > 0, label: "Add contacts & groups", href: "/contacts" },
-  ];
-  const doneCount = setup.filter((x) => x.done).length;
-  const cta = !s.whatsapp
-    ? { text: "Link your WhatsApp to your account.", btn: "Link", href: "/settings", art: <PhoneArt /> }
-    : !s.ai
-      ? { text: "Add a free AI key for smart summaries.", btn: "Add key", href: "/ai", art: <SparkArt /> }
-      : { text: "Let AI write your next email.", btn: "Compose", href: "/compose", art: <SparkArt /> };
-
-  return (
-    <div className="grid lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)] gap-6 items-start">
-      {/* ───── left: the "phone" summary column ───── */}
-      <section className="space-y-4">
-        <div className="flex items-start justify-between rise">
-          <h1 className="text-[2rem] md:text-[2.3rem] font-bold leading-[1.1] tracking-tight">{greeting()},<br />{name}!</h1>
-          <Link href="/settings" aria-label="Settings"><Avatar name={name} size={46} /></Link>
-        </div>
-
-        <Link href="/inbox?box=unread" className="block rise" style={{ animationDelay: "60ms" }}>
-          <div className="text-sm font-semibold text-white/85">Unread emails</div>
-          <div className="flex items-end gap-2">
-            <span className="hero-number">{s.unread.toLocaleString()}</span>
-            <span className="text-lg muted mb-2">/{s.inboxTotal.toLocaleString()}</span>
-          </div>
-        </Link>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-3">
-            <Tile label="Today" emoji="📩" value={s.today} unit="received" href="/insights" />
-            <Tile label="Approvals" emoji="⏳" value={s.pending} unit={s.pending === 1 ? "draft waiting" : "drafts waiting"} href="/drafts" className={s.pending ? "ring-sel" : ""} />
-          </div>
-          <Tile label="This week" emoji="📈" href="/insights" className="flex flex-col">
-            <div className="flex-1 flex items-center py-3 min-h-[90px]"><div className="w-full"><Sparkline data={weekData} height={74} unit=" emails" /></div></div>
-            <div className="tile-number">{weekTotal}</div>
-            <div className="text-xs muted mt-1">emails · {s.sentToday} sent today</div>
-          </Tile>
-        </div>
-
-        <div className="glass p-4 flex items-center gap-3 rise" style={{ animationDelay: "160ms" }}>
-          <div className="flex-1">
-            <p className="font-semibold leading-snug">{cta.text}</p>
-            <Link href={cta.href} className="btn btn-primary btn-sm mt-3">{cta.btn}</Link>
-          </div>
-          {cta.art}
-        </div>
-      </section>
-
-      {/* ───── right: details ───── */}
-      <section className="space-y-5">
-        {doneCount < setup.length && (
-          <div className="glass p-5 rise">
-            <div className="flex items-center justify-between mb-3">
-              <div className="font-bold">🚀 Finish setting up</div>
-              <span className="text-xs muted">{doneCount}/{setup.length} done</span>
-            </div>
-            <div className="h-1.5 rounded-full bg-white/15 mb-4 overflow-hidden"><div className="h-full rounded-full bg-white" style={{ width: `${(doneCount / setup.length) * 100}%` }} /></div>
-            <div className="grid sm:grid-cols-2 gap-2">
-              {setup.map((x) => x.done ? (
-                <div key={x.label} className="glass-soft px-3 py-2.5 text-sm muted line-through">✓ {x.label}</div>
-              ) : (
-                <Link key={x.label} href={x.href} className="glass-soft px-3 py-2.5 text-sm font-semibold hover:bg-white/20">○ {x.label} →</Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="glass rise overflow-hidden">
-          <div className="flex items-center justify-between px-5 pt-4 pb-3">
-            <h2 className="font-bold text-lg">Latest emails</h2>
-            <Link href="/inbox" className="btn btn-sm">View all</Link>
-          </div>
-          {!recent?.items.length && <p className="px-5 pb-5 text-sm muted">No emails yet. They appear here as soon as an account is connected.</p>}
-          <div className="divide-app">
-            {recent?.items.slice(0, 6).map((e) => (
-              <Link key={e.id} href={`/inbox/${e.id}`} className="flex gap-3 px-5 py-3.5 hover-tint">
-                <Avatar name={e.fromName || e.fromAddress} size={38} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className={`truncate text-sm ${e.isRead ? "text-white/85" : "font-bold"}`}>{e.fromName || e.fromAddress}</span>
-                    <PriorityBadge p={e.priority} />
-                    <span className="ml-auto text-xs faint shrink-0">{timeAgo(e.receivedAt)}</span>
-                  </div>
-                  <div className={`text-sm truncate ${e.isRead ? "muted" : "font-semibold"}`}>{e.subject}</div>
-                  <div className="text-xs faint line-clamp-1">{e.summary ?? e.snippet}</div>
-                </div>
-                {!e.isRead && <span className="mt-2 h-2.5 w-2.5 rounded-full bg-[#ff7a45] shrink-0 shadow-[0_0_10px_#ff7a45]" aria-label="unread" />}
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid sm:grid-cols-2 gap-5">
-          <div className="glass p-5 space-y-3 rise">
-            <h2 className="font-bold">System status</h2>
-            <Row label="Email accounts" value={<Badge color={s.accounts && s.connected === s.accounts ? "green" : s.accounts ? "amber" : "gray"}>{s.connected}/{s.accounts} connected</Badge>} />
-            <Row label="AI" value={s.ai ? <Badge color="green">{s.ai.model}</Badge> : <Badge color="red">Not set</Badge>} />
-            <Row label="WhatsApp" value={s.whatsapp ? <Badge color="green">Connected</Badge> : <Badge color="red">Not set</Badge>} />
-            <Row label="Contacts" value={<Badge>{s.contacts}</Badge>} />
-          </div>
-          <div className="glass p-5 rise">
-            <h2 className="font-bold mb-3">Activity</h2>
-            {!s.activity.length && <p className="text-sm muted">Nothing yet.</p>}
-            <ul className="space-y-2.5">
-              {s.activity.slice(0, 6).map((a) => (
-                <li key={a.id} className="text-xs flex gap-2">
-                  <span className={`mt-1 h-1.5 w-1.5 rounded-full shrink-0 ${a.type === "error" ? "bg-rose-300" : "bg-white/70"}`} />
-                  <span><span className={a.type === "error" ? "text-bad" : "text-white/90"}>{a.message}</span><span className="faint"> · {timeAgo(a.createdAt)}</span></span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
-  return <div className="flex items-center justify-between gap-2 text-sm"><span className="muted">{label}</span>{value}</div>;
-}
-
-/** Glossy phone with chat bubbles (stands in for the smartwatch in the reference). */
-function PhoneArt() {
-  return (
-    <svg width="92" height="92" viewBox="0 0 92 92" aria-hidden className="shrink-0 drop-shadow-xl">
-      <defs>
-        <linearGradient id="ph" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#3a3a48" /><stop offset="1" stopColor="#111118" /></linearGradient>
-        <linearGradient id="sc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1fbf6b" /><stop offset="1" stopColor="#0d8f4f" /></linearGradient>
-      </defs>
-      <rect x="24" y="6" width="44" height="80" rx="11" fill="url(#ph)" />
-      <rect x="28" y="12" width="36" height="68" rx="7" fill="url(#sc)" />
-      <rect x="32" y="22" width="22" height="9" rx="4.5" fill="#fff" opacity=".95" />
-      <rect x="38" y="36" width="22" height="9" rx="4.5" fill="#dcf8c6" />
-      <rect x="32" y="50" width="18" height="9" rx="4.5" fill="#fff" opacity=".95" />
-      <circle cx="70" cy="22" r="11" fill="#ff7a45" stroke="#fff" strokeWidth="2.5" />
-      <text x="70" y="26.5" textAnchor="middle" fontSize="12" fontWeight="800" fill="#fff">✉</text>
-    </svg>
-  );
-}
-
-function SparkArt() {
-  return <div className="text-6xl drop-shadow-xl shrink-0" aria-hidden>✨</div>;
+  return h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 17 ? "Good day" : "Good evening";
 }

@@ -3,6 +3,7 @@ import "./globals.css";
 import { ToastProvider } from "@/components/toast";
 import { RegisterSW } from "@/components/register-sw";
 import { Backdrop } from "@/components/backdrop";
+import { MotionRoot } from "@/components/motion-root";
 
 export const metadata: Metadata = {
   title: { default: "MailBridge", template: "%s · MailBridge" },
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Backdrop />
         <ToastProvider>{children}</ToastProvider>
         <RegisterSW />
+        <MotionRoot />
       </body>
     </html>
   );

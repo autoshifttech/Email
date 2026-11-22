@@ -4,6 +4,7 @@ import { api, useApi, timeAgo } from "@/lib/client";
 import { AI_PRESETS } from "@/lib/ai-presets";
 import { Badge, Empty, Field, Loading, Modal, PageHeader, Spinner } from "@/components/ui";
 import { useToast } from "@/components/toast";
+import { check, pip } from "@/lib/fx";
 import type { PublicProvider } from "@/lib/serialize";
 
 type Resp = { providers: PublicProvider[]; envFallback: boolean; envModel: string | null };
@@ -28,6 +29,8 @@ export default function AiPage() {
   const activate = async (p: PublicProvider) => {
     await api(`/api/ai-providers/${p.id}/activate`, { method: "POST" });
     toast("success", `${p.name} is now active`);
+    pip.cheer();
+    check("big");
     reload();
   };
   const remove = async (p: PublicProvider) => {

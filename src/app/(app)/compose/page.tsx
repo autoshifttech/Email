@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, useApi } from "@/lib/client";
 import { Field, PageHeader, Spinner } from "@/components/ui";
 import { useToast } from "@/components/toast";
+import { ZIP_SVG, check, pip, plane } from "@/lib/fx";
 
 type Account = { id: string; label: string; address: string; isDefault: boolean; isActive: boolean };
 type Group = { id: string; name: string; memberCount: number };
@@ -51,13 +52,16 @@ export default function ComposePage() {
     }
   };
 
+  const sendBtn = useRef<HTMLButtonElement>(null);
   const submit = async (sendNow: boolean) => {
     if (sendNow && broadcast && !confirm(`Send this email individually to ${recipientCount} recipients?`)) return;
     setBusy(sendNow ? "send" : "save");
     try {
       const r = await api<{ queued?: boolean }>("/api/drafts", { body: { accountId, target, to, groupId: target === "group" ? groupId : undefined, subject, body, prompt: prompt || undefined, author, sendNow } });
+      if (sendNow) { plane(sendBtn.current); setTimeout(() => { check("big"); pip.cheer(); }, 650); }
+      else pip.react("salute", "ok", 900);
       toast("success", !sendNow ? "Saved to Approvals" : r.queued ? `Sending to ${recipientCount} recipients in the background…` : "Email sent ✅");
-      router.push(sendNow && !r.queued ? "/inbox?box=sent" : "/drafts");
+      setTimeout(() => router.push(sendNow && !r.queued ? "/inbox?box=sent" : "/drafts"), sendNow ? 1500 : 300);
     } catch (e) {
       toast("error", (e as Error).message);
       setBusy(null);
@@ -86,7 +90,7 @@ export default function ComposePage() {
           <Field label="Send to">
             <div className="flex gap-2 mb-2">
               {(["emails", "group", "all"] as const).map((t) => (
-                <button key={t} type="button" onClick={() => setTarget(t)} className={`btn btn-sm ${target === t ? "btn-primary" : ""}`}>
+                <button key={t} type="button" onClick={() => setTarget(t)} className="chip !py-2 !px-3.5 text-sm" aria-pressed={target === t}>
                   {t === "emails" ? "Email addresses" : t === "group" ? "A group" : `Everyone (${contacts?.length ?? 0})`}
                 </button>
               ))}
@@ -105,7 +109,7 @@ export default function ComposePage() {
           <Field label="Message"><textarea className="input" rows={14} value={body} onChange={(e) => { setBody(e.target.value); }} placeholder="Write your email here, or describe it to the AI →" /></Field>
           <div className="flex flex-wrap gap-2 justify-end">
             <button className="btn" disabled={!subject || !body || !!busy} onClick={() => submit(false)}>{busy === "save" && <Spinner />} Save for approval</button>
-            <button className="btn btn-primary" disabled={!subject || !body || !!busy || !recipientCount} onClick={() => submit(true)}>{busy === "send" && <Spinner />} Send {recipientCount > 1 ? `to ${recipientCount}` : "now"}</button>
+            <button ref={sendBtn} className="btn btn-primary" disabled={!subject || !body || !!busy || !recipientCount} onClick={() => submit(true)}>{busy === "send" ? <Spinner /> : <svg className="zip" width="22" height="22" viewBox="0 0 24 24" aria-hidden dangerouslySetInnerHTML={{ __html: ZIP_SVG }} />} Send {recipientCount > 1 ? `to ${recipientCount}` : "now"}</button>
           </div>
         </div>
         <div className="glass p-5 h-fit space-y-3 lg:sticky lg:top-6">

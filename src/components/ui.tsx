@@ -1,15 +1,14 @@
 "use client";
 import { useEffect } from "react";
+import { pip } from "@/lib/fx";
 
-export function PageHeader({ title, subtitle, actions, emoji }: { title: string; subtitle?: string; actions?: React.ReactNode; emoji?: string }) {
+/** Section title row (the reference "date row"): title on the left, glass pills on the right. */
+export function PageHeader({ subtitle, actions }: { title: string; subtitle?: string; actions?: React.ReactNode; emoji?: string }) {
+  // the page title lives in the app header; this row carries the subtitle and the page's glass pills
+  if (!subtitle && !actions) return null;
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3 mb-6 rise">
-      <div>
-        <h1 className="text-[1.75rem] md:text-[2.1rem] font-bold tracking-tight leading-tight">
-          {title} {emoji && <span className="align-middle">{emoji}</span>}
-        </h1>
-        {subtitle && <p className="muted text-sm mt-1 max-w-2xl">{subtitle}</p>}
-      </div>
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-5 rv">
+      {subtitle ? <p className="small max-w-xl">{subtitle}</p> : <span />}
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
   );
@@ -26,27 +25,19 @@ const BADGE: Record<string, string> = {
 };
 
 export function Badge({ color = "gray", children }: { color?: keyof typeof BADGE; children: React.ReactNode }) {
-  return <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${BADGE[color]}`}>{children}</span>;
+  return <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap ${BADGE[color]}`}>{children}</span>;
 }
 
 export function PriorityBadge({ p }: { p?: string | null }) {
   if (!p) return null;
   const c = p === "urgent" ? "red" : p === "high" ? "orange" : p === "low" ? "gray" : "blue";
-  const icon = p === "urgent" ? "🔥" : p === "high" ? "⚡" : p === "low" ? "" : "";
-  return <Badge color={c}>{icon} {p}</Badge>;
+  return <Badge color={c}>{p === "urgent" ? "🔥 " : p === "high" ? "⚡ " : ""}{p}</Badge>;
 }
 
 export function StatusBadge({ s }: { s: string }) {
   const map: Record<string, [keyof typeof BADGE, string]> = {
-    connected: ["green", "● Connected"],
-    error: ["red", "● Error"],
-    pending: ["amber", "● Connecting…"],
-    disabled: ["gray", "● Disabled"],
-    PENDING_APPROVAL: ["amber", "⏳ Awaiting approval"],
-    SENDING: ["blue", "Sending…"],
-    SENT: ["green", "✓ Sent"],
-    REJECTED: ["gray", "Cancelled"],
-    FAILED: ["red", "✕ Failed"],
+    connected: ["green", "● Connected"], error: ["red", "● Error"], pending: ["amber", "● Connecting…"], disabled: ["gray", "● Disabled"],
+    PENDING_APPROVAL: ["orange", "⏳ Awaiting approval"], SENDING: ["blue", "Sending…"], SENT: ["green", "✓ Sent"], REJECTED: ["gray", "Cancelled"], FAILED: ["red", "✕ Failed"],
   };
   const [c, l] = map[s] ?? ["gray", s];
   return <Badge color={c}>{l}</Badge>;
@@ -60,17 +51,18 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
   }, [open, onClose]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-[#140a5a]/55 backdrop-blur-sm p-0 md:p-6" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-[#140a5a]/55 backdrop-blur-[3px] p-0 md:p-6" onMouseDown={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`glass rise w-full ${wide ? "md:max-w-3xl" : "md:max-w-lg"} max-h-[92vh] overflow-y-auto rounded-b-none md:rounded-b-[26px] p-5 md:p-6 !bg-[#4a33dd]/80`}
+        data-noscroll
+        className={`card modal-scroll xf-zoom w-full ${wide ? "md:max-w-3xl" : "md:max-w-lg"} max-h-[92vh] overflow-y-auto !rounded-b-none md:!rounded-b-[30px] p-5 md:p-6 !bg-[#4a33dd]/85`}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-bold">{title}</h2>
-          <button className="btn btn-icon" onClick={onClose} aria-label="Close">✕</button>
+          <button className="mini" onClick={onClose} aria-label="Close">✕</button>
         </div>
         {children}
       </div>
@@ -83,26 +75,25 @@ export function Field({ label, children, hint }: { label: string; children: Reac
     <label className="block">
       <span className="label">{label}</span>
       {children}
-      {hint && <span className="block text-xs muted mt-1.5">{hint}</span>}
+      {hint && <span className="block small mt-1.5">{hint}</span>}
     </label>
   );
 }
 
 export function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label?: string }) {
   return (
-    <button type="button" onClick={() => onChange(!checked)} className="inline-flex items-center gap-2.5 text-sm text-left" aria-pressed={checked}>
-      <span className={`relative inline-block h-6 w-11 shrink-0 rounded-full border transition ${checked ? "bg-white border-white" : "bg-white/15 border-white/35"}`}>
-        <span className={`absolute top-[3px] h-4 w-4 rounded-full transition-all ${checked ? "left-[23px] bg-[#4b33ea]" : "left-[3px] bg-white/85"}`} />
-      </span>
+    <button type="button" onClick={() => onChange(!checked)} className="inline-flex items-center gap-2.5 text-sm font-medium text-left" aria-pressed={checked}>
+      <span className="tgl" data-on={checked}><i /></span>
       {label}
     </button>
   );
 }
 
 export function Empty({ icon, title, text, action }: { icon: string; title: string; text?: string; action?: React.ReactNode }) {
+  useEffect(() => { pip.react("wink", "worried", 1400); }, []);
   return (
-    <div className="glass p-10 text-center rise">
-      <div className="text-5xl mb-3 drop-shadow-lg">{icon}</div>
+    <div className="card p-10 text-center rv">
+      <div className="shrug" aria-hidden>{icon === "🤷" ? "🤷" : icon}</div>
       <div className="text-lg font-bold">{title}</div>
       {text && <p className="muted text-sm mt-1.5 max-w-md mx-auto">{text}</p>}
       {action && <div className="mt-5">{action}</div>}
@@ -116,32 +107,33 @@ export function Spinner() {
 
 export function Loading() {
   return (
-    <div className="glass p-10 text-center muted">
+    <div className="card p-10 text-center muted">
       <Spinner /> <span className="ml-2">Loading…</span>
     </div>
   );
 }
 
-/** Small glass stat tile (the "Calories / Sleeping" tiles). */
+/** Small glass stat tile. */
 export function Tile({ label, emoji, value, unit, href, children, className = "" }: { label: string; emoji?: string; value?: React.ReactNode; unit?: string; href?: string; children?: React.ReactNode; className?: string }) {
   const inner = (
     <>
-      <div className="text-sm font-semibold text-white/90">{label} {emoji}</div>
+      <div className="text-sm font-semibold">{label} {emoji}</div>
       {value !== undefined && <div className="tile-number mt-3">{value}</div>}
       {unit && <div className="text-xs muted mt-1">{unit}</div>}
       {children}
     </>
   );
-  const cls = `glass block p-4 rise hover:bg-white/10 transition ${className}`;
+  const cls = `card block p-4 rv ${className}`;
   return href ? <a href={href} className={cls}>{inner}</a> : <div className={cls}>{inner}</div>;
 }
 
-export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
+/** Glass bead with initials (orange when highlighted). */
+export function Avatar({ name, size = 40, hot = false }: { name: string; size?: number; hot?: boolean }) {
   const initials = (name || "?").split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map((s) => s[0]?.toUpperCase()).join("") || "?";
   return (
     <span
-      className="inline-flex shrink-0 items-center justify-center rounded-full font-bold text-white border-2 border-white/70 shadow-lg"
-      style={{ width: size, height: size, fontSize: size * 0.36, background: "linear-gradient(135deg,#ffb36b,#ff4d8d 60%,#8b5cff)" }}
+      className="rn"
+      style={{ width: size, height: size, fontSize: size * 0.34, ...(hot ? { background: "var(--orange-grad)", color: "#fff" } : {}) }}
     >
       {initials}
     </span>

@@ -74,7 +74,7 @@ export default function AccountsPage() {
           {data.map((a) => (
             <div key={a.id} className="glass p-4 flex flex-col gap-3">
               <div className="flex items-start gap-3">
-                <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-[#ffb36b] to-[#ff4d8d] border-2 border-white/70 flex items-center justify-center font-bold text-accent">
+                <div className="rn shrink-0" style={{ background: "var(--orange-grad)", color: "#fff" }}>
                   {a.label.slice(0, 1).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -88,7 +88,7 @@ export default function AccountsPage() {
                   <div className="text-xs muted">{a.imapHost} · {a.lastSyncAt ? `synced ${timeAgo(a.lastSyncAt)}` : "never synced"}</div>
                 </div>
               </div>
-              {a.lastError && a.status === "error" && <div className="text-xs text-bad bg-rose-500/20 border border-rose-200/30 rounded-lg p-2">{a.lastError}</div>}
+              {a.lastError && a.status === "error" && <div className="text-xs text-bad bg-rose-500/10 border border-rose-500/20 rounded-2xl p-2.5">{a.lastError}</div>}
               <div className="flex flex-wrap gap-x-5 gap-y-2">
                 <Toggle checked={a.isActive} onChange={(v) => patch(a, { isActive: v })} label="Active" />
                 <Toggle checked={a.notifyOnWhatsApp} onChange={(v) => patch(a, { notifyOnWhatsApp: v })} label="WhatsApp alerts" />
@@ -163,7 +163,7 @@ function AccountForm({ initial, onClose, onSaved }: { initial: { id?: string; fo
             ))}
           </div>
         </Field>
-        <div className="text-xs rounded-lg glass-soft text-white/90 p-3">💡 {preset.help}</div>
+        <div className="text-xs glass-soft p-3 leading-relaxed">💡 {preset.help}</div>
         <div className="grid sm:grid-cols-2 gap-3">
           <Field label="Email address"><input className="input" type="email" required value={f.address} onChange={(e) => onAddress(e.target.value)} /></Field>
           <Field label="Label" hint="Short name shown in WhatsApp, e.g. Work"><input className="input" placeholder={f.address.split("@")[0] || "Work"} value={f.label} onChange={(e) => set("label", e.target.value)} /></Field>
