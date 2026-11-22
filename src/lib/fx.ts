@@ -1,7 +1,6 @@
 "use client";
 /**
- * Cartoon motion effects (client only). Ported from the reference "liquid glass"
- * design: paper plane with Zip the pilot, smoke puffs, star confetti, drawn
+ * Motion effects (client only). Ported from the reference design: paper plane, smoke puffs, star confetti, drawn
  * checkmarks, rubber stamps, faces on avatar beads, squash-and-stretch springs,
  * slot-machine counters, and an event bus that lets the mascot Pip react.
  * Everything is transform/opacity based and switches off for reduced motion.
@@ -214,16 +213,13 @@ export function check(kind: "sm" | "big" = "big", near?: Element | null) {
   play(ckSmall, 1500);
 }
 
-// ───────────────────────── paper plane (Zip) ─────────────────────────
-const INK = "#7a2e00";
-export const ZIP_SVG =
-  `<path d="M2 9 L11 13 L22 2 Z" style="fill:#fff;stroke:${INK};stroke-width:1.3;stroke-linejoin:round"/>` +
-  `<g class="zw"><path d="M22 2 L15 22 L11 13 Z" style="fill:#ffe3c2;stroke:${INK};stroke-width:1.3;stroke-linejoin:round"/></g>` +
-  `<path d="M22 2 L11 13" style="fill:none;stroke:${INK};stroke-width:1.1;stroke-linecap:round"/>` +
-  `<circle cx="17.6" cy="6.4" r="2.6" style="fill:#fff;stroke:#ee6a00;stroke-width:1.5"/><circle cx="14.1" cy="9.7" r="2.6" style="fill:#fff;stroke:#ee6a00;stroke-width:1.5"/>` +
-  `<circle cx="17.9" cy="6.7" r="1.05" style="fill:#1c1c20;stroke:none"/><circle cx="14.4" cy="10" r="1.05" style="fill:#1c1c20;stroke:none"/>`;
+// ───────────────────────── paper plane ─────────────────────────
+/** Plain paper plane (white body, indigo outline). */
+export const PLANE_SVG =
+  `<path d="m22 2-7 20-4-9-9-4z" style="fill:#fff;stroke:#2b1fb0;stroke-width:1.6;stroke-linejoin:round"/>` +
+  `<path d="M22 2 11 13" style="fill:none;stroke:#2b1fb0;stroke-width:1.6;stroke-linecap:round"/>`;
 
-/** Zip launches from `btn` with a puff, does a loop-the-loop and flies off top-right with speed lines. */
+/** A paper plane launches from `btn` with a puff, does a loop-the-loop and flies off top-right with speed lines. */
 export function plane(btn: Element | null) {
   if (!btn || !FULL()) return;
   const ic = btn.querySelector("svg") || btn, r = ic.getBoundingClientRect();
@@ -273,7 +269,7 @@ export function plane(btn: Element | null) {
   pl.setAttribute("viewBox", "0 0 24 24");
   pl.setAttribute("class", "plane-fly");
   pl.setAttribute("aria-hidden", "true");
-  pl.innerHTML = ZIP_SVG;
+  pl.innerHTML = PLANE_SVG;
   (pl as unknown as HTMLElement).style.left = cx - 15 + "px";
   (pl as unknown as HTMLElement).style.top = cy - 15 + "px";
   document.body.appendChild(pl);

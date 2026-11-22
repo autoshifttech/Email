@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
-import { ZIP_SVG, celebrate, check, pip, plane, stamp } from "@/lib/fx";
+import { PLANE_SVG, celebrate, check, pip, plane, stamp } from "@/lib/fx";
 import { api, useApi, timeAgo } from "@/lib/client";
 import { Badge, Empty, Loading, PageHeader, Spinner, StatusBadge } from "@/components/ui";
 import { useToast } from "@/components/toast";
@@ -78,7 +78,7 @@ function DraftCard({ d, onChange }: { d: Draft; onChange: () => void }) {
     if (edit) await api(`/api/drafts/${d.id}`, { method: "PATCH", body: { subject, body, ...(d.mode !== "BROADCAST" ? { to } : {}) } });
     if (recipients.length > 1 && !confirm(`Send to ${recipients.length} recipients?`)) return;
     const r = await api<{ queued?: boolean }>(`/api/drafts/${d.id}/send`, { method: "POST" });
-    // Zip takes off, the card gets stamped, a big check is drawn
+    // the paper plane takes off, the card gets stamped, a big check is drawn
     plane(sendBtn.current);
     stamp(cardRef.current, "SENT", "#2f9a6c");
     setTimeout(() => (recipients.length > 1 ? celebrate(cardRef.current) : (check("big"), pip.cheer())), 700);
@@ -135,7 +135,7 @@ function DraftCard({ d, onChange }: { d: Draft; onChange: () => void }) {
             {edit ? <button className="btn" onClick={save} disabled={!!busy}>{busy === "save" && <Spinner />} Save</button> : <button className="btn" onClick={() => setEdit(true)}>✏️ Edit</button>}
             <button className="btn btn-danger" disabled={!!busy} onClick={reject}>❌ Reject</button>
             <button ref={sendBtn} className="btn btn-primary" disabled={!!busy} onClick={send}>
-              {busy === "send" ? <Spinner /> : <svg className="zip" width="22" height="22" viewBox="0 0 24 24" aria-hidden dangerouslySetInnerHTML={{ __html: ZIP_SVG }} />} Approve & send
+              {busy === "send" ? <Spinner /> : <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden dangerouslySetInnerHTML={{ __html: PLANE_SVG }} />} Approve & send
             </button>
           </div>
         </>

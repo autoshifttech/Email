@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { api, useApi } from "@/lib/client";
 import { Field, PageHeader, Spinner } from "@/components/ui";
 import { useToast } from "@/components/toast";
-import { ZIP_SVG, check, pip, plane } from "@/lib/fx";
+import { PLANE_SVG, check, pip, plane } from "@/lib/fx";
 
 type Account = { id: string; label: string; address: string; isDefault: boolean; isActive: boolean };
 type Group = { id: string; name: string; memberCount: number };
@@ -109,7 +109,7 @@ export default function ComposePage() {
           <Field label="Message"><textarea className="input" rows={14} value={body} onChange={(e) => { setBody(e.target.value); }} placeholder="Write your email here, or describe it to the AI →" /></Field>
           <div className="flex flex-wrap gap-2 justify-end">
             <button className="btn" disabled={!subject || !body || !!busy} onClick={() => submit(false)}>{busy === "save" && <Spinner />} Save for approval</button>
-            <button ref={sendBtn} className="btn btn-primary" disabled={!subject || !body || !!busy || !recipientCount} onClick={() => submit(true)}>{busy === "send" ? <Spinner /> : <svg className="zip" width="22" height="22" viewBox="0 0 24 24" aria-hidden dangerouslySetInnerHTML={{ __html: ZIP_SVG }} />} Send {recipientCount > 1 ? `to ${recipientCount}` : "now"}</button>
+            <button ref={sendBtn} className="btn btn-primary" disabled={!subject || !body || !!busy || !recipientCount} onClick={() => submit(true)}>{busy === "send" ? <Spinner /> : <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden dangerouslySetInnerHTML={{ __html: PLANE_SVG }} />} Send {recipientCount > 1 ? `to ${recipientCount}` : "now"}</button>
           </div>
         </div>
         <div className="glass p-5 h-fit space-y-3 lg:sticky lg:top-6">

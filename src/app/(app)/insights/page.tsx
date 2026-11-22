@@ -53,9 +53,9 @@ export default function InsightsPage() {
               <Ring pct={data.received ? (read / data.received) * 100 : 100} />
             </div>
             <div className="stats">
-              <StatBar title="Replied" value={data.sent} total={Math.max(data.received, data.sent)} color="#ffb23d" buddy="rocket" />
-              <StatBar title="Important" value={data.important} total={Math.max(data.received, 1)} color="#e03c3c" buddy="snail" />
-              <StatBar title="Sent by AI" value={data.aiSent} total={Math.max(data.sent, data.aiSent, 1)} color="#f5b800" buddy="guard" />
+              <StatBar title="Replied" value={data.sent} total={Math.max(data.received, data.sent)} color="#ffb23d" />
+              <StatBar title="Important" value={data.important} total={Math.max(data.received, 1)} color="#e03c3c" />
+              <StatBar title="Sent by AI" value={data.aiSent} total={Math.max(data.sent, data.aiSent, 1)} color="#f5b800" />
             </div>
           </section>
 

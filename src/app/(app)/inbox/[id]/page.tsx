@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api, useApi } from "@/lib/client";
 import { Badge, Loading, PriorityBadge, Spinner } from "@/components/ui";
 import { useToast } from "@/components/toast";
-import { ZIP_SVG, check, pip, plane } from "@/lib/fx";
+import { PLANE_SVG, check, pip, plane } from "@/lib/fx";
 
 type Email = {
   id: string; accountId: string; direction: string; fromName: string; fromAddress: string; to: string; cc: string; subject: string;
@@ -159,7 +159,7 @@ function ReplyBox({ email, onClose, onSent }: { email: Email; onClose: () => voi
       <textarea className="input font-[inherit]" rows={10} value={body} onChange={(e) => setBody(e.target.value)} placeholder="Write your reply, or let AI draft it above…" />
       <div className="flex flex-wrap gap-2 justify-end">
         <button className="btn" disabled={!body || !!busy} onClick={() => submit(false)}>{busy === "save" && <Spinner />} Save for approval</button>
-        <button ref={sendBtn} className="btn btn-primary" disabled={!body || !!busy} onClick={() => submit(true)}>{busy === "send" ? <Spinner /> : <svg className="zip" width="22" height="22" viewBox="0 0 24 24" aria-hidden dangerouslySetInnerHTML={{ __html: ZIP_SVG }} />} Send now</button>
+        <button ref={sendBtn} className="btn btn-primary" disabled={!body || !!busy} onClick={() => submit(true)}>{busy === "send" ? <Spinner /> : <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden dangerouslySetInnerHTML={{ __html: PLANE_SVG }} />} Send now</button>
       </div>
     </div>
   );

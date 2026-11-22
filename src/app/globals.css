@@ -524,33 +524,13 @@ body.tilt .summary { transform: perspective(900px) rotateX(var(--tx, 0deg)) rota
 @keyframes ckDraw { 0% { opacity: 0; stroke-dashoffset: 1; } 1% { opacity: 1; stroke-dashoffset: 1; } 100% { opacity: 1; stroke-dashoffset: 0; } }
 @keyframes ckBg { from { opacity: 0; } to { opacity: 0.14; } }
 
-/* ---------- paper plane (Zip), puffs, speed lines, confetti ---------- */
+/* ---------- paper plane, puffs, speed lines, confetti ---------- */
 .plane-fly { position: fixed; z-index: 97; width: 30px; height: 30px; pointer-events: none; overflow: visible; filter: drop-shadow(0 6px 8px rgba(150, 60, 0, 0.3)); will-change: transform, opacity; }
 .plane-trail { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 96; pointer-events: none; overflow: visible; }
 .plane-trail path { fill: none; stroke: rgba(238, 106, 0, 0.55); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .puff { position: fixed; z-index: 97; border-radius: 50%; pointer-events: none; will-change: transform, opacity; box-shadow: inset -3px -4px 0 rgba(139, 145, 184, 0.25), 0 3px 8px rgba(40, 40, 80, 0.1); }
 .streak { position: fixed; z-index: 95; height: 3px; margin-top: -1.5px; border-radius: 2px; pointer-events: none; transform-origin: 0 50%; background: linear-gradient(90deg, rgba(255, 178, 61, 0.95), rgba(255, 178, 61, 0)); }
 .xconf { position: fixed; z-index: 98; pointer-events: none; will-change: transform, opacity; aspect-ratio: 1; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
-.zip { overflow: visible; animation: zipWig 2.8s ease-in-out infinite; transform-origin: 50% 50%; }
-@keyframes zipWig { 0%, 60%, 100% { rotate: 0deg; } 12% { rotate: -9deg; } 28% { rotate: 7deg; } 44% { rotate: -4deg; } }
-.zip .zw { transform-box: fill-box; transform-origin: 100% 0; animation: zipFlap 1.4s ease-in-out infinite; }
-.plane-fly .zw { animation: zipFlap 0.16s linear infinite; }
-@keyframes zipFlap { 0%, 100% { rotate: -9deg; } 50% { rotate: 6deg; } }
-
-/* ---------- bar buddies ---------- */
-.bud { position: absolute; width: 22px; height: 22px; pointer-events: none; z-index: 2; left: 0; top: 0; transition: left 0.85s cubic-bezier(0.34, 1.5, 0.5, 1); }
-.bud svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.rocket .fl { transform-box: fill-box; transform-origin: 100% 50%; animation: budFlame 0.18s ease-in-out infinite alternate; }
-@keyframes budFlame { from { transform: scale(1, 1); } to { transform: scale(1.35, 0.8); } }
-.rocket.full svg { animation: budShake 0.12s linear infinite; }
-@keyframes budShake { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-0.8px, 0.6px); } 75% { transform: translate(0.8px, -0.6px); } }
-.snail .sn-e { transform-box: fill-box; transform-origin: 50% 100%; animation: budEye 1.6s ease-in-out infinite; }
-@keyframes budEye { 0%, 100% { rotate: -8deg; } 50% { rotate: 9deg; } }
-.guard svg { animation: budBob 0.5s ease-in-out infinite alternate; }
-@keyframes budBob { from { transform: translateY(0); } to { transform: translateY(-1.8px); } }
-.guard .gleg { transform-box: fill-box; transform-origin: 50% 0; animation: budLeg 0.5s ease-in-out infinite alternate; }
-.guard .gleg2 { animation-direction: alternate-reverse; }
-@keyframes budLeg { from { rotate: -16deg; } to { rotate: 16deg; } }
 
 /* ---------- reduced motion: keep gentle fades only ---------- */
 @media (prefers-reduced-motion: reduce) {

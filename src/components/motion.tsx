@@ -1,8 +1,6 @@
 "use client";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { anim, slot } from "@/lib/fx";
-
-const useIso = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 /** Odometer: each digit sits in a 0–9 column that slides to its new value (ones digit first). */
 export function RollNumber({ value, suffix = "", className = "" }: { value: number; suffix?: string; className?: string }) {
@@ -60,44 +58,10 @@ export function Ring({ pct, label }: { pct: number; label?: React.ReactNode }) {
   );
 }
 
-const INK = "#7a2e00";
-const S = { stroke: INK, strokeWidth: 1.2, strokeLinejoin: "round" as const, strokeLinecap: "round" as const };
-const BUDDIES = {
-  rocket: (
-    <svg viewBox="0 0 24 24" aria-hidden>
-      <path className="fl" d="M6 12 L0 8.5 L3 12 L0 15.5 Z" fill="#ffb23d" />
-      <path d="M7 9 L3 5.5 L8 11 Z" {...S} fill="#ee6a00" /><path d="M7 15 L3 18.5 L8 13 Z" {...S} fill="#ee6a00" />
-      <path d="M5.5 12 Q13 4.5 22 12 Q13 19.5 5.5 12 Z" {...S} fill="#fff" />
-      <path d="M17.5 8.2 Q21 9.5 22 12 Q21 14.5 17.5 15.8 Q19.5 12 17.5 8.2 Z" fill="#ee6a00" />
-      <circle cx="12.5" cy="12" r="2.2" {...S} fill="#8fc7ff" />
-    </svg>
-  ),
-  snail: (
-    <svg viewBox="0 0 24 24" aria-hidden>
-      <path d="M2 19 Q3 14.5 9 16.5 L20 16.5 Q22.5 17 22 19 Z" {...S} fill="#e8d6b8" />
-      <circle cx="11" cy="11.5" r="6.2" {...S} fill="#ffb23d" />
-      <path d="M11 11.5 m-2.6 0 a2.6 2.6 0 1 1 2.6 2.6 a1.3 1.3 0 0 1 -1.3 -1.3" fill="none" stroke={INK} strokeWidth="1.1" strokeLinecap="round" />
-      <g className="sn-e"><path d="M19.5 16.5 L20 10" stroke={INK} strokeWidth="1.1" strokeLinecap="round" /><circle cx="20" cy="9.4" r="1.5" fill="#fff" stroke={INK} strokeWidth="1" /></g>
-      <g className="sn-e" style={{ animationDelay: "-.6s" }}><path d="M16.5 16.5 L16.2 11" stroke={INK} strokeWidth="1.1" strokeLinecap="round" /><circle cx="16.2" cy="10.4" r="1.5" fill="#fff" stroke={INK} strokeWidth="1" /></g>
-    </svg>
-  ),
-  guard: (
-    <svg viewBox="0 0 24 24" aria-hidden>
-      <g className="gleg"><path d="M10.2 17.5 V22" stroke={INK} strokeWidth="2" strokeLinecap="round" /></g>
-      <g className="gleg gleg2"><path d="M13.8 17.5 V22" stroke={INK} strokeWidth="2" strokeLinecap="round" /></g>
-      <path d="M8.3 11.5 H15.7 V18 H8.3 Z" {...S} fill="#3b5bdb" /><circle cx="12" cy="14.6" r="1.4" fill="#ffd43d" />
-      <circle cx="12" cy="7.8" r="4" {...S} fill="#ffd9b0" /><path d="M7.4 7.2 Q12 0.8 16.6 7.2 Z" {...S} fill="#3b5bdb" />
-      <path d="M6.6 7.4 H17.4" stroke={INK} strokeWidth="1.4" strokeLinecap="round" />
-      <circle cx="10.4" cy="9" r=".7" fill="#1c1c20" /><circle cx="13.6" cy="9" r=".7" fill="#1c1c20" />
-    </svg>
-  ),
-};
-
-/** Stat tile with a sloshing bar, a buddy riding the end of the bar, and a slot-machine counter. */
-export function StatBar({ title, value, total, color, buddy }: { title: string; value: number; total: number; color: string; buddy: keyof typeof BUDDIES }) {
+/** Stat tile with a sloshing bar and a slot-machine counter. */
+export function StatBar({ title, value, total, color }: { title: string; value: number; total: number; color: string }) {
   const pct = total ? Math.min(100, (value / total) * 100) : 0;
   const barRef = useRef<HTMLDivElement>(null);
-  const budRef = useRef<HTMLSpanElement>(null);
   const numRef = useRef<HTMLElement>(null);
   const last = useRef<string | null>(null);
   const [w, setW] = useState(0);
@@ -112,32 +76,14 @@ export function StatBar({ title, value, total, color, buddy }: { title: string; 
       slot(numRef.current);
       const bar = barRef.current;
       if (bar) { bar.classList.remove("slosh"); void bar.offsetWidth; bar.classList.add("slosh"); setTimeout(() => bar.classList.remove("slosh"), 1000); }
-      anim(budRef.current, [{ transform: "scale(1)" }, { transform: "scale(1.3,.8)", offset: 0.25 }, { transform: "scale(.9,1.15)", offset: 0.55 }, { transform: "scale(1)" }], { duration: 520, easing: "ease-out" });
     }
     last.current = text;
   }, [text]);
-  useIso(() => {
-    const place = () => {
-      const bar = barRef.current, b = budRef.current;
-      if (!bar || !b) return;
-      const size = 22;
-      let x = bar.offsetLeft + (w / 100) * bar.offsetWidth - size * 0.55;
-      x = Math.max(bar.offsetLeft - 2, Math.min(bar.offsetLeft + bar.offsetWidth - size + 3, x));
-      b.style.left = x + "px";
-      b.style.top = bar.offsetTop + bar.offsetHeight / 2 - size / 2 - 3 + "px";
-      b.classList.toggle("full", w >= 99.5);
-    };
-    place();
-    window.addEventListener("resize", place);
-    return () => window.removeEventListener("resize", place);
-  }, [w]);
-
   return (
     <div className="stat">
       <p>{title}</p>
       <small ref={numRef}>{text}</small>
       <div className="bar" ref={barRef}><i style={{ background: color, width: `${w}%` }} /></div>
-      <span ref={budRef} className={`bud ${buddy}`} aria-hidden>{BUDDIES[buddy]}</span>
     </div>
   );
 }

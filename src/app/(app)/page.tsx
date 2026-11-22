@@ -181,9 +181,9 @@ export default function Home() {
           <Ring pct={pct} />
         </div>
         <div className="stats">
-          <StatBar title="Read" value={read} total={total} color="#ffb23d" buddy="rocket" />
-          <StatBar title="Important" value={groups.important.length} total={total} color="#e03c3c" buddy="snail" />
-          <StatBar title="Replied" value={groups.sent.length} total={Math.max(total, groups.sent.length)} color="#f5b800" buddy="guard" />
+          <StatBar title="Read" value={read} total={total} color="#ffb23d" />
+          <StatBar title="Important" value={groups.important.length} total={total} color="#e03c3c" />
+          <StatBar title="Replied" value={groups.sent.length} total={Math.max(total, groups.sent.length)} color="#f5b800" />
         </div>
       </section>
 
