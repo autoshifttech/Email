@@ -92,7 +92,7 @@ function insights(date: string) {
   const received = hourly.reduce((a, b) => a + b, 0);
   const cat: [string, number][] = [["work", Math.ceil(received * 0.4)], ["finance", Math.floor(received * 0.2)], ["newsletter", Math.floor(received * 0.2)], ["personal", Math.floor(received * 0.12)]];
   return {
-    date, received, unread: offset === 0 ? 3 : 0, important: Math.round(received * 0.2), sent: Math.round(received * 0.3), aiSent: Math.round(received * 0.15),
+    date, received, unread: offset === 0 ? Math.min(3, received) : 0, important: Math.round(received * 0.2), sent: Math.round(received * 0.3), aiSent: Math.round(received * 0.15),
     pending: 1, hourly, byCategory: cat.filter(([, n]) => n > 0),
   };
 }
@@ -126,6 +126,16 @@ export function demoApi(method: string, url: URL): [number, unknown] {
 
   if (p === "/api/health") return [200, { ok: true, name: "MailBridge", demo: true }];
   if (p === "/api/stats") return [200, stats()];
+  if (p === "/api/days") {
+    const from = q.get("from") ?? new Date().toISOString().slice(0, 10), days = Math.min(31, Number(q.get("days") ?? 7));
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const counts = Array.from({ length: days }, (_, i) => {
+      const dd = new Date(from + "T00:00:00"); dd.setDate(dd.getDate() + i);
+      const off = Math.round((today.getTime() - dd.getTime()) / D);
+      return off < 0 ? 0 : off === 0 ? EMAILS.filter((e) => e.direction === "IN" && e.age < D).length : off % 3 === 2 ? 0 : countFor(off);
+    });
+    return [200, { from, counts }];
+  }
   if (p === "/api/insights") return [200, insights(q.get("date") ?? new Date().toISOString().slice(0, 10))];
   if (p === "/api/accounts") return [200, ACCOUNTS];
   if (p.startsWith("/api/accounts/")) return [200, ACCOUNTS.find((a) => a.id === p.split("/")[3]) ?? ACCOUNTS[0]];
@@ -138,6 +148,14 @@ export function demoApi(method: string, url: URL): [number, unknown] {
       box === "important" ? e.direction === "IN" && !e.isArchived && (e.priority === "high" || e.priority === "urgent") :
       e.direction === "IN" && !e.isArchived);
     if (accountId) items = items.filter((e) => e.accountId === accountId);
+    const date = q.get("date");
+    if (date) {
+      const tz = Number(q.get("tz") || 0);
+      const [y, m, d] = date.split("-").map(Number);
+      const start = Date.UTC(y, m - 1, d) + tz * 60_000, end = start + D;
+      if (box === "any") items = EMAILS.slice();
+      items = items.filter((e) => { const t = Date.now() - e.age; return t >= start && t < end; });
+    }
     if (s) items = items.filter((e) => `${e.subject} ${e.fromName} ${e.fromAddress} ${e.body}`.toLowerCase().includes(s));
     return [200, { total: items.length, page: 1, pageSize: 30, items: items.map(listItem) }];
   }

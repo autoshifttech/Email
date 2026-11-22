@@ -40,8 +40,8 @@ public class MainActivity extends Activity {
     private static final String PREFS = "mailbridge";
     private static final String KEY_URL = "server_url";
     private static final int FILE_CHOOSER = 42;
-    private static final int BRAND = Color.parseColor("#4B33EA");
-    private static final int BRAND_DEEP = Color.parseColor("#2F1FB8");
+    private static final int BRAND = Color.parseColor("#EE6A00");
+    private static final int BRAND_DEEP = Color.parseColor("#E8E8EB");
 
     private FrameLayout root;
     private WebView web;
@@ -192,8 +192,8 @@ public class MainActivity extends Activity {
         LinearLayout box = column();
 
         box.addView(title("MailBridge"));
-        box.addView(text("Your inbox, summarized on WhatsApp.\nEnter the address of your MailBridge website to connect.", 15, 0xCCFFFFFF));
-        if (message != null) box.addView(text(message, 14, Color.parseColor("#FFD0DA")));
+        box.addView(text("Your inbox, summarized on WhatsApp.\nEnter the address of your MailBridge website to connect.", 15, Color.parseColor("#63636C")));
+        if (message != null) box.addView(text(message, 14, Color.parseColor("#C93030")));
 
         EditText input = new EditText(this);
         input.setHint("https://your-app.vercel.app");
@@ -201,10 +201,10 @@ public class MainActivity extends Activity {
         input.setSingleLine(true);
         input.setInputType(InputType.TYPE_TEXT_VARIATION_URI);
         input.setImeOptions(EditorInfo.IME_ACTION_GO);
-        input.setTextColor(Color.WHITE);
-        input.setHintTextColor(0x88FFFFFF);
+        input.setTextColor(Color.parseColor("#1C1C20"));
+        input.setHintTextColor(Color.parseColor("#8C8C95"));
         input.setPadding(dp(16), dp(14), dp(16), dp(14));
-        input.setBackground(pill(0x26FFFFFF, 0x66FFFFFF, 16));
+        input.setBackground(pill(0xB3FFFFFF, 0xFFFFFFFF, 16));
         box.addView(input, spaced(dp(20)));
 
         Button connect = primaryButton("Connect");
@@ -221,7 +221,7 @@ public class MainActivity extends Activity {
         input.setOnEditorActionListener((v, actionId, e) -> { go.run(); return true; });
         box.addView(connect, spaced(dp(14)));
 
-        box.addView(text("Tip: on the MailBridge website, open “Get the app” and tap “Or tap here after installing” to connect automatically.", 12, 0x99FFFFFF), spaced(dp(22)));
+        box.addView(text("Tip: on the MailBridge website, open “Get the app” and tap “Or tap here after installing” to connect automatically.", 12, Color.parseColor("#63636C")), spaced(dp(22)));
         root.addView(box, centered());
     }
 
@@ -230,7 +230,7 @@ public class MainActivity extends Activity {
         web = null;
         LinearLayout box = column();
         box.addView(title("Can't reach MailBridge"));
-        box.addView(text("Check your internet connection.\n" + Uri.parse(serverUrl).getHost() + "\n(" + detail + ")", 14, 0xCCFFFFFF));
+        box.addView(text("Check your internet connection.\n" + Uri.parse(serverUrl).getHost() + "\n(" + detail + ")", 14, Color.parseColor("#63636C")));
         Button retry = primaryButton("Retry");
         retry.setOnClickListener(v -> showWeb(null));
         box.addView(retry, spaced(dp(22)));
@@ -269,14 +269,14 @@ public class MainActivity extends Activity {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(dp(24), dp(28), dp(24), dp(28));
-        box.setBackground(pill(0x29FFFFFF, 0x55FFFFFF, 28));
+        box.setBackground(pill(0xCCFFFFFF, 0xFFFFFFFF, 28));
         return box;
     }
 
     private FrameLayout.LayoutParams centered() {
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
         lp.setMargins(dp(20), dp(20), dp(20), dp(20));
-        root.setBackground(new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{Color.parseColor("#6A4DFF"), BRAND, BRAND_DEEP}));
+        root.setBackground(new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{Color.parseColor("#ECECEF"), Color.parseColor("#E8E8EB"), Color.parseColor("#E1E2EA")}));
         return lp;
     }
 
@@ -287,7 +287,7 @@ public class MainActivity extends Activity {
     }
 
     private TextView title(String t) {
-        TextView v = text(t, 30, Color.WHITE);
+        TextView v = text(t, 30, Color.parseColor("#1C1C20"));
         v.setTypeface(Typeface.DEFAULT_BOLD);
         v.setPadding(0, 0, 0, dp(8));
         return v;
@@ -308,16 +308,22 @@ public class MainActivity extends Activity {
         b.setAllCaps(false);
         b.setTextSize(16);
         b.setTypeface(Typeface.DEFAULT_BOLD);
-        b.setTextColor(Color.parseColor("#2B1FB0"));
-        b.setBackground(pill(Color.WHITE, Color.WHITE, 999));
+        b.setTextColor(Color.WHITE);
+        b.setBackground(orangePill());
         return b;
     }
 
     private Button ghostButton(String label) {
         Button b = primaryButton(label);
-        b.setTextColor(Color.WHITE);
-        b.setBackground(pill(0x26FFFFFF, 0x66FFFFFF, 999));
+        b.setTextColor(Color.parseColor("#1C1C20"));
+        b.setBackground(pill(0xB3FFFFFF, 0xFFFFFFFF, 999));
         return b;
+    }
+
+    private GradientDrawable orangePill() {
+        GradientDrawable d = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{Color.parseColor("#FFA22E"), Color.parseColor("#EE6A00")});
+        d.setCornerRadius(dp(60));
+        return d;
     }
 
     private GradientDrawable pill(int fill, int stroke, int radiusDp) {

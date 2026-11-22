@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { api, useApi } from "@/lib/client";
 import { Field, Loading, PageHeader, Spinner, Toggle } from "@/components/ui";
+import { Seg } from "@/components/motion";
+import { check } from "@/lib/fx";
 import { useToast } from "@/components/toast";
 
 type S = Record<string, { value: string; secret: boolean; isSet: boolean; hint?: string }>;
@@ -25,6 +27,7 @@ export default function SettingsPage() {
     try {
       await api("/api/settings", { method: "PUT", body: { values: Object.fromEntries(keys.map((k) => [k, v[k] ?? ""])) } });
       toast("success", "Settings saved");
+      check("big");
       reload();
     } catch (e) {
       toast("error", (e as Error).message);
@@ -124,14 +127,16 @@ export default function SettingsPage() {
           <h2 className="font-semibold">🔔 Notification rules</h2>
           <Toggle checked={v.WA_NOTIFICATIONS_ENABLED !== "false"} onChange={(x) => set("WA_NOTIFICATIONS_ENABLED", x ? "true" : "false")} label="Forward new emails to WhatsApp" />
           <div className="grid sm:grid-cols-2 gap-3">
-            <Field label="Only forward emails with priority" hint="The AI rates every email">
-              <select className="input" value={v.NOTIFY_MIN_PRIORITY ?? "low"} onChange={(e) => set("NOTIFY_MIN_PRIORITY", e.target.value)}>
-                <option value="low">All emails</option>
-                <option value="normal">Normal and above (skip newsletters/promos)</option>
-                <option value="high">High and urgent only</option>
-                <option value="urgent">Urgent only</option>
-              </select>
-            </Field>
+            <div className="sm:col-span-2">
+              <span className="label">Forward emails with priority</span>
+              <Seg
+                label="Minimum priority to forward"
+                value={(v.NOTIFY_MIN_PRIORITY as "low" | "normal" | "high" | "urgent") || "low"}
+                onChange={(x) => set("NOTIFY_MIN_PRIORITY", x)}
+                options={[{ value: "low", label: "All" }, { value: "normal", label: "Normal+" }, { value: "high", label: "High+" }, { value: "urgent", label: "Urgent" }]}
+              />
+              <p className="small mt-2 text-center">Slide to choose. The AI rates every email; newsletters and promos count as low.</p>
+            </div>
             <Field label="Timezone" hint="e.g. Asia/Kolkata"><input className="input" value={v.TIMEZONE ?? ""} onChange={(e) => set("TIMEZONE", e.target.value)} /></Field>
             <Field label="Quiet hours start" hint="No alerts in this window (urgent still comes through)"><input className="input" type="time" value={v.QUIET_HOURS_START ?? ""} onChange={(e) => set("QUIET_HOURS_START", e.target.value)} /></Field>
             <Field label="Quiet hours end"><input className="input" type="time" value={v.QUIET_HOURS_END ?? ""} onChange={(e) => set("QUIET_HOURS_END", e.target.value)} /></Field>

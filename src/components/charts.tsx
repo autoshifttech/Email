@@ -30,18 +30,18 @@ export function Sparkline({ data, height = 70, unit = "" }: { data: Point[]; hei
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full touch-none" style={{ height }} preserveAspectRatio="none" onPointerMove={onMove} onPointerLeave={() => setHover(null)} role="img" aria-label={`Trend: ${data.map((d) => `${d.label} ${d.value}`).join(", ")}`}>
         <defs>
           <linearGradient id={`a${id}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#ff5a7a" stopOpacity=".35" />
-            <stop offset="1" stopColor="#ff5a7a" stopOpacity="0" />
+            <stop offset="0" stopColor="#ffa22e" stopOpacity=".35" />
+            <stop offset="1" stopColor="#ffa22e" stopOpacity="0" />
           </linearGradient>
         </defs>
         <path d={area} fill={`url(#a${id})`} />
-        <path d={path} fill="none" stroke="#ff5a7a" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinecap="round" />
-        {h && <line x1={h[0]} x2={h[0]} y1={0} y2={H} stroke="rgba(255,255,255,.55)" strokeWidth="1" vectorEffect="non-scaling-stroke" strokeDasharray="3 3" />}
+        <path d={path} fill="none" stroke="#ee6a00" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinecap="round" />
+        {h && <line x1={h[0]} x2={h[0]} y1={0} y2={H} stroke="rgba(40,40,80,.35)" strokeWidth="1" vectorEffect="non-scaling-stroke" strokeDasharray="3 3" />}
       </svg>
       {h && hover !== null && (
         <>
-          <span className="pointer-events-none absolute h-2.5 w-2.5 -ml-[5px] -mt-[5px] rounded-full bg-white ring-2 ring-[#ff5a7a]" style={{ left: `${(h[0] / W) * 100}%`, top: (h[1] / H) * height }} />
-          <div className="pointer-events-none absolute -top-9 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-white px-2 py-1 text-[11px] font-semibold text-[#2b1fb0] shadow-lg" style={{ left: `${Math.min(85, Math.max(15, (h[0] / W) * 100))}%` }}>
+          <span className="pointer-events-none absolute h-2.5 w-2.5 -ml-[5px] -mt-[5px] rounded-full bg-white ring-2 ring-[#ee6a00]" style={{ left: `${(h[0] / W) * 100}%`, top: (h[1] / H) * height }} />
+          <div className="pointer-events-none absolute -top-9 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[#1c1c20] px-2 py-1 text-[11px] font-semibold text-white shadow-lg" style={{ left: `${Math.min(85, Math.max(15, (h[0] / W) * 100))}%` }}>
             {data[hover].label}: {data[hover].value}{unit}
           </div>
         </>
@@ -63,7 +63,7 @@ export function BarChart({ data, height = 200, unit = "", highlight }: { data: P
       </div>
       <div className="relative flex-1 min-w-0">
         <div className="absolute inset-x-0 top-0 bottom-5 flex flex-col justify-between pointer-events-none">
-          {ticks.map((t) => <div key={t} className="border-t border-white/12" />)}
+          {ticks.map((t) => <div key={t} className="border-t border-black/[.06]" />)}
         </div>
         <div className="absolute inset-x-0 top-0 bottom-5 flex items-end gap-[2px]">
           {data.map((d, i) => {
@@ -71,11 +71,11 @@ export function BarChart({ data, height = 200, unit = "", highlight }: { data: P
             return (
               <div key={i} className="relative flex-1 h-full flex items-end justify-center cursor-default" onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover(null)}>
                 <div
-                  className={`w-full max-w-[9px] rounded-t-[4px] transition-colors ${on ? "bg-white" : d.value ? "bg-white/55" : "bg-white/15"}`}
+                  className={`w-full max-w-[9px] rounded-t-[4px] transition-colors ${on ? "bg-[#ee6a00]" : d.value ? "bg-gradient-to-t from-[#ffb23d] to-[#ffcf8a]" : "bg-black/[.06]"}`}
                   style={{ height: `${Math.max(d.value ? 4 : 2, (d.value / nice) * 100)}%` }}
                 />
                 {hover === i && (
-                  <div className="pointer-events-none absolute bottom-full mb-1 z-10 whitespace-nowrap rounded-lg bg-white px-2 py-1 text-[11px] font-semibold text-[#2b1fb0] shadow-lg">
+                  <div className="pointer-events-none absolute bottom-full mb-1 z-10 whitespace-nowrap rounded-lg bg-[#1c1c20] px-2 py-1 text-[11px] font-semibold text-white shadow-lg">
                     {d.label}: {d.value}{unit}
                   </div>
                 )}

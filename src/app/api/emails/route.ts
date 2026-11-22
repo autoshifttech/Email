@@ -10,6 +10,9 @@ export const GET = handle(async (req: Request) => {
       box: u.get("box") || undefined,
       q: u.get("q") || undefined,
       page: Number(u.get("page") || 1),
+      pageSize: Number(u.get("pageSize") || 30),
+      date: u.get("date") || undefined,
+      tz: Number(u.get("tz") || 0),
     }),
   );
 });

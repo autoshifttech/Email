@@ -1,32 +1,36 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MORE_ITEMS } from "@/components/nav";
-import { IconLogout, IconPhone } from "@/components/icons";
+import { IconGear, IconLogout, IconMail, IconPen, IconPhone, IconSpark, IconUsers } from "@/components/icons";
 import { api } from "@/lib/client";
-import { PageHeader } from "@/components/ui";
+import { hopEl } from "@/lib/fx";
+
+const ITEMS = [
+  { href: "/compose", label: "Compose", sub: "Write or AI-draft an email", Icon: IconPen, hot: true },
+  { href: "/accounts", label: "Email Accounts", sub: "Add, edit, sync mailboxes", Icon: IconMail },
+  { href: "/contacts", label: "Contacts & Groups", sub: "People and broadcast lists", Icon: IconUsers },
+  { href: "/ai", label: "AI Keys", sub: "Groq, Gemini, OpenRouter…", Icon: IconSpark },
+  { href: "/settings", label: "Settings", sub: "WhatsApp, alerts, style", Icon: IconGear },
+  { href: "/download", label: "Get the app", sub: "Android APK · iPhone PWA", Icon: IconPhone },
+];
 
 export default function More() {
   const router = useRouter();
   return (
-    <>
-      <PageHeader title="More" />
-      <div className="grid grid-cols-2 gap-3">
-        {MORE_ITEMS.filter((i) => i.href !== "/more").map(({ href, label, Icon }) => (
-          <Link key={href} href={href} className="glass p-4 rise hover:bg-white/10 flex flex-col gap-6">
-            <span className="h-11 w-11 rounded-2xl bg-white text-[#2b1fb0] flex items-center justify-center shadow-lg"><Icon size={22} /></span>
-            <span className="font-semibold leading-tight">{label}</span>
-          </Link>
-        ))}
-        <Link href="/download" className="glass p-4 rise hover:bg-white/10 flex flex-col gap-6">
-          <span className="h-11 w-11 rounded-2xl bg-white text-[#2b1fb0] flex items-center justify-center shadow-lg"><IconPhone size={22} /></span>
-          <span className="font-semibold leading-tight">Get the Android app</span>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      {ITEMS.map(({ href, label, sub, Icon, hot }) => (
+        <Link key={href} href={href} className="card p-4 rv flex flex-col gap-5 active:scale-[.98] transition-transform" onClick={(e) => hopEl(e.currentTarget.querySelector(".mi"))}>
+          <span className={`mi h-12 w-12 rounded-2xl grid place-items-center ${hot ? "btn-primary" : "circle !w-12 !h-12 !rounded-2xl"}`}><Icon size={22} /></span>
+          <span>
+            <span className="block font-semibold leading-tight">{label}</span>
+            <span className="block small mt-0.5">{sub}</span>
+          </span>
         </Link>
-        <button className="glass p-4 rise hover:bg-white/10 flex flex-col gap-6 text-left" onClick={async () => { await api("/api/auth/logout", { method: "POST" }); router.push("/login"); }}>
-          <span className="h-11 w-11 rounded-2xl bg-white/20 border border-white/40 flex items-center justify-center"><IconLogout size={22} /></span>
-          <span className="font-semibold">Log out</span>
-        </button>
-      </div>
-    </>
+      ))}
+      <button type="button" className="card p-4 rv flex flex-col gap-5 text-left active:scale-[.98] transition-transform" onClick={async () => { await api("/api/auth/logout", { method: "POST" }); router.push("/login"); }}>
+        <span className="circle !w-12 !h-12 !rounded-2xl text-[#b42828]"><IconLogout size={22} /></span>
+        <span className="font-semibold">Log out</span>
+      </button>
+    </div>
   );
 }

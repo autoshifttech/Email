@@ -1,7 +1,14 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "./db";
 
-export type EmailFilter = { accountId?: string; box?: string; q?: string; page?: number; pageSize?: number };
+export type EmailFilter = { accountId?: string; box?: string; q?: string; page?: number; pageSize?: number; date?: string; tz?: number };
+
+/** Start/end of a local calendar day, given the viewer's timezone offset in minutes (Date.getTimezoneOffset()). */
+export function dayWindow(date: string, tz = 0) {
+  const [y, m, d] = date.split("-").map(Number);
+  const start = new Date(Date.UTC(y, m - 1, d) + tz * 60_000);
+  return { start, end: new Date(start.getTime() + 864e5) };
+}
 
 export async function queryEmails(f: EmailFilter) {
   const where: Prisma.EmailWhereInput = {};
@@ -11,7 +18,12 @@ export async function queryEmails(f: EmailFilter) {
     case "archived": where.direction = "IN"; where.isArchived = true; break;
     case "unread": where.direction = "IN"; where.isArchived = false; where.isRead = false; break;
     case "important": where.direction = "IN"; where.isArchived = false; where.priority = { in: ["high", "urgent"] }; break;
+    case "any": break;
     default: where.direction = "IN"; where.isArchived = false;
+  }
+  if (f.date && /^\d{4}-\d{2}-\d{2}$/.test(f.date)) {
+    const { start, end } = dayWindow(f.date, f.tz ?? 0);
+    where.receivedAt = { gte: start, lt: end };
   }
   if (f.q) {
     where.OR = [

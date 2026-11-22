@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { ZIP_SVG, celebrate, check, pip, plane, stamp } from "@/lib/fx";
 import { api, useApi, timeAgo } from "@/lib/client";
 import { Badge, Empty, Loading, PageHeader, Spinner, StatusBadge } from "@/components/ui";
 import { useToast } from "@/components/toast";
@@ -24,8 +25,8 @@ export default function DraftsPage() {
   return (
     <>
       <PageHeader title="Approvals" subtitle="Drafts from WhatsApp and the dashboard. Nothing is sent until you approve it." />
-      <div className="flex gap-1 overflow-x-auto mb-4">
-        {TABS.map((t) => <button key={t.id} onClick={() => setTab(t.id)} className={`btn btn-sm ${tab === t.id ? "btn-primary" : ""}`}>{t.label}</button>)}
+      <div className="chips mb-2" role="group" aria-label="Filter drafts">
+        {TABS.map((t) => <button key={t.id} onClick={() => setTab(t.id)} className="chip !py-2 !px-3.5 text-sm" aria-pressed={tab === t.id}>{t.label}</button>)}
       </div>
       {loading && !data ? <Loading /> : !data?.length ? (
         <Empty icon="✅" title={tab === "PENDING_APPROVAL" ? "Nothing waiting for approval" : "No drafts"} text="AI drafts you request on WhatsApp also appear here." />
@@ -46,6 +47,8 @@ function DraftCard({ d, onChange }: { d: Draft; onChange: () => void }) {
   const [aiPrompt, setAiPrompt] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const editable = d.status === "PENDING_APPROVAL" || d.status === "FAILED";
+  const cardRef = useRef<HTMLDivElement>(null);
+  const sendBtn = useRef<HTMLButtonElement>(null);
 
   const run = async (name: string, fn: () => Promise<unknown>, ok?: string) => {
     setBusy(name);
@@ -62,6 +65,7 @@ function DraftCard({ d, onChange }: { d: Draft; onChange: () => void }) {
   const save = () => run("save", async () => {
     await api(`/api/drafts/${d.id}`, { method: "PATCH", body: { subject, body, ...(d.mode !== "BROADCAST" ? { to } : {}) } });
     setEdit(false);
+    check("sm", cardRef.current?.querySelector(".font-semibold"));
   }, "Draft saved");
   const revise = () => run("ai", async () => {
     const r = await api<{ subject: string; body: string }>("/api/ai/draft", { body: { kind: "revise", subject, body, prompt: aiPrompt } });
@@ -74,11 +78,22 @@ function DraftCard({ d, onChange }: { d: Draft; onChange: () => void }) {
     if (edit) await api(`/api/drafts/${d.id}`, { method: "PATCH", body: { subject, body, ...(d.mode !== "BROADCAST" ? { to } : {}) } });
     if (recipients.length > 1 && !confirm(`Send to ${recipients.length} recipients?`)) return;
     const r = await api<{ queued?: boolean }>(`/api/drafts/${d.id}/send`, { method: "POST" });
+    // Zip takes off, the card gets stamped, a big check is drawn
+    plane(sendBtn.current);
+    stamp(cardRef.current, "SENT", "#2f9a6c");
+    setTimeout(() => (recipients.length > 1 ? celebrate(cardRef.current) : (check("big"), pip.cheer())), 700);
     toast("success", r.queued ? "Sending in the background…" : "Sent ✅");
+    await new Promise((res) => setTimeout(res, 900));
   });
+  const reject = () => run("rej", async () => {
+    await api(`/api/drafts/${d.id}`, { method: "PATCH", body: { status: "REJECTED" } });
+    stamp(cardRef.current, "REJECTED");
+    pip.react("gasp", "gasp", 700);
+    await new Promise((res) => setTimeout(res, 800));
+  }, "Draft cancelled");
 
   return (
-    <div className="glass p-4">
+    <div ref={cardRef} className="card p-4 md:p-5 relative rv">
       <div className="flex flex-wrap items-center gap-2 mb-2">
         <StatusBadge s={d.status} />
         <Badge color="blue">{d.mode === "REPLY" ? "Reply" : d.mode === "BROADCAST" ? `Broadcast · ${recipients.length}` : "New email"}</Badge>
@@ -102,7 +117,7 @@ function DraftCard({ d, onChange }: { d: Draft; onChange: () => void }) {
           <textarea className="input" rows={10} value={body} onChange={(e) => setBody(e.target.value)} />
         </div>
       ) : (
-        <div className="rounded-xl glass-soft p-4">
+        <div className="glass-soft p-4">
           <div className="font-semibold mb-2">{subject}</div>
           <div className="prose-email">{body}</div>
         </div>
@@ -118,8 +133,10 @@ function DraftCard({ d, onChange }: { d: Draft; onChange: () => void }) {
           </div>
           <div className="flex flex-wrap gap-2 mt-3 justify-end">
             {edit ? <button className="btn" onClick={save} disabled={!!busy}>{busy === "save" && <Spinner />} Save</button> : <button className="btn" onClick={() => setEdit(true)}>✏️ Edit</button>}
-            <button className="btn btn-danger" disabled={!!busy} onClick={() => run("rej", () => api(`/api/drafts/${d.id}`, { method: "PATCH", body: { status: "REJECTED" } }), "Draft cancelled")}>❌ Reject</button>
-            <button className="btn btn-primary" disabled={!!busy} onClick={send}>{busy === "send" && <Spinner />} ✅ Approve & send</button>
+            <button className="btn btn-danger" disabled={!!busy} onClick={reject}>❌ Reject</button>
+            <button ref={sendBtn} className="btn btn-primary" disabled={!!busy} onClick={send}>
+              {busy === "send" ? <Spinner /> : <svg className="zip" width="22" height="22" viewBox="0 0 24 24" aria-hidden dangerouslySetInnerHTML={{ __html: ZIP_SVG }} />} Approve & send
+            </button>
           </div>
         </>
       )}
