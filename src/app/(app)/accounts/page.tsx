@@ -1,9 +1,11 @@
 "use client";
 import { useState } from "react";
+import { CheckCircle2, Hand, Inbox, Lightbulb, Mail, Pencil, RefreshCw, Star, Trash2, XCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { api, useApi, timeAgo } from "@/lib/client";
 import { MAIL_PRESETS } from "@/lib/mail-presets";
 import { Badge, Empty, Field, Loading, Modal, PageHeader, Spinner, StatusBadge, Toggle } from "@/components/ui";
+import { IconChip } from "@/components/ico";
 import { useToast } from "@/components/toast";
 import type { PublicAccount } from "@/lib/serialize";
 
@@ -60,21 +62,21 @@ export default function AccountsPage() {
         title="Email Accounts"
         subtitle="Add, edit and manage the mailboxes MailBridge watches"
         actions={<>
-          {!!data?.length && <button className="btn" disabled={!!syncing} onClick={() => sync()}>{syncing === "all" ? <Spinner /> : "🔄"} Sync all</button>}
+          {!!data?.length && <button className="btn" disabled={!!syncing} onClick={() => sync()}>{syncing === "all" ? <Spinner /> : <RefreshCw size={16} />} Sync all</button>}
           <button className="btn btn-primary" onClick={() => setEditing({ form: { ...blank } })}>+ Add account</button>
         </>}
       />
       {welcome && !data?.length && (
-        <div className="glass p-4 mb-4 text-sm">👋 Welcome! Start by adding the email account you want forwarded to WhatsApp.</div>
+        <div className="glass p-4 mb-4 text-sm flex items-center gap-3"><IconChip icon={Hand} tone="orange" size={36} float /> Welcome! Start by adding the email account you want forwarded to WhatsApp.</div>
       )}
       {loading && !data ? <Loading /> : !data?.length ? (
-        <Empty icon="📧" title="No email accounts yet" text="Add Gmail, Outlook, Zoho or any IMAP/SMTP mailbox. New emails will be summarized and sent to your WhatsApp." action={<button className="btn btn-primary" onClick={() => setEditing({ form: { ...blank } })}>+ Add your first account</button>} />
+        <Empty icon={Mail} title="No email accounts yet" text="Add Gmail, Outlook, Zoho or any IMAP/SMTP mailbox. New emails will be summarized and sent to your WhatsApp." action={<button className="btn btn-primary" onClick={() => setEditing({ form: { ...blank } })}>+ Add your first account</button>} />
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
           {data.map((a) => (
             <div key={a.id} className="glass p-4 flex flex-col gap-3">
               <div className="flex items-start gap-3">
-                <div className="rn shrink-0" style={{ background: "var(--orange-grad)", color: "#fff" }}>
+                <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-[#ffb36b] to-[#ff4d8d] border-2 border-white/70 flex items-center justify-center font-bold text-accent">
                   {a.label.slice(0, 1).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -88,17 +90,17 @@ export default function AccountsPage() {
                   <div className="text-xs muted">{a.imapHost} · {a.lastSyncAt ? `synced ${timeAgo(a.lastSyncAt)}` : "never synced"}</div>
                 </div>
               </div>
-              {a.lastError && a.status === "error" && <div className="text-xs text-bad bg-rose-500/10 border border-rose-500/20 rounded-2xl p-2.5">{a.lastError}</div>}
+              {a.lastError && a.status === "error" && <div className="text-xs text-bad bg-rose-500/20 border border-rose-200/30 rounded-lg p-2">{a.lastError}</div>}
               <div className="flex flex-wrap gap-x-5 gap-y-2">
                 <Toggle checked={a.isActive} onChange={(v) => patch(a, { isActive: v })} label="Active" />
                 <Toggle checked={a.notifyOnWhatsApp} onChange={(v) => patch(a, { notifyOnWhatsApp: v })} label="WhatsApp alerts" />
               </div>
               <div className="flex flex-wrap gap-2 pt-1 border-t border-app mt-auto pt-3">
-                <a className="btn btn-sm" href={`/inbox?accountId=${a.id}`}>📥 Inbox</a>
-                {a.isActive && <button className="btn btn-sm" disabled={!!syncing} onClick={() => sync(a.id)}>{syncing === a.id ? <Spinner /> : "🔄"} Sync now</button>}
-                <button className="btn btn-sm" onClick={() => setEditing({ id: a.id, form: { ...blank, ...a, password: "" } })}>✏️ Edit</button>
-                {!a.isDefault && <button className="btn btn-sm" onClick={() => patch(a, { isDefault: true })}>⭐ Make default</button>}
-                <button className="btn btn-sm btn-danger ml-auto" onClick={() => remove(a)}>🗑 Delete</button>
+                <a className="btn btn-sm" href={`/inbox?accountId=${a.id}`}><Inbox size={15} /> Inbox</a>
+                {a.isActive && <button className="btn btn-sm" disabled={!!syncing} onClick={() => sync(a.id)}>{syncing === a.id ? <Spinner /> : <RefreshCw size={15} />} Sync</button>}
+                <button className="btn btn-sm" onClick={() => setEditing({ id: a.id, form: { ...blank, ...a, password: "" } })}><Pencil size={15} /> Edit</button>
+                {!a.isDefault && <button className="btn btn-sm" onClick={() => patch(a, { isDefault: true })}><Star size={15} /> Default</button>}
+                <button className="btn btn-sm btn-icon btn-danger ml-auto" aria-label="Delete account" title="Delete" onClick={() => remove(a)}><Trash2 size={16} /></button>
               </div>
             </div>
           ))}
@@ -163,7 +165,7 @@ function AccountForm({ initial, onClose, onSaved }: { initial: { id?: string; fo
             ))}
           </div>
         </Field>
-        <div className="text-xs glass-soft p-3 leading-relaxed">💡 {preset.help}</div>
+        <div className="text-xs rounded-2xl glass-soft text-white/90 p-3 flex gap-2.5 items-start"><Lightbulb size={16} className="shrink-0 text-amber-200 mt-0.5" /> <span>{preset.help}</span></div>
         <div className="grid sm:grid-cols-2 gap-3">
           <Field label="Email address"><input className="input" type="email" required value={f.address} onChange={(e) => onAddress(e.target.value)} /></Field>
           <Field label="Label" hint="Short name shown in WhatsApp, e.g. Work"><input className="input" placeholder={f.address.split("@")[0] || "Work"} value={f.label} onChange={(e) => set("label", e.target.value)} /></Field>
@@ -203,8 +205,8 @@ function AccountForm({ initial, onClose, onSaved }: { initial: { id?: string; fo
 
         {test && (
           <div className="space-y-1 text-sm">
-            <div className={test.imap.ok ? "text-good" : "text-bad"}>{test.imap.ok ? "✅" : "❌"} IMAP (receive): {test.imap.message}</div>
-            <div className={test.smtp.ok ? "text-good" : "text-bad"}>{test.smtp.ok ? "✅" : "❌"} SMTP (send): {test.smtp.message}</div>
+            <div className={test.imap.ok ? "text-good" : "text-bad"}>{test.imap.ok ? <CheckCircle2 size={16} className="inline -mt-0.5" /> : <XCircle size={16} className="inline -mt-0.5" />} IMAP (receive): {test.imap.message}</div>
+            <div className={test.smtp.ok ? "text-good" : "text-bad"}>{test.smtp.ok ? <CheckCircle2 size={16} className="inline -mt-0.5" /> : <XCircle size={16} className="inline -mt-0.5" />} SMTP (send): {test.smtp.message}</div>
           </div>
         )}
         <div className="flex flex-wrap gap-2 justify-end pt-2">

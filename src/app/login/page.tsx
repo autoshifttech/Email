@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { Smartphone } from "lucide-react";
 import { Suspense } from "react";
 import { LoginForm } from "./form";
 
@@ -16,7 +17,7 @@ export default async function LoginPage() {
           <p className="muted text-center mt-2">Your inbox, summarized on WhatsApp.<br />AI replies, sent only with your approval.</p>
         </div>
         <Suspense><LoginForm setup={setup} /></Suspense>
-        <p className="text-center mt-5"><a href="/download" className="btn btn-sm">📱 Get the Android app</a></p>
+        <p className="text-center mt-5"><a href="/download" className="btn btn-sm"><Smartphone size={15} /> Get the Android app</a></p>
       </div>
     </div>
   );

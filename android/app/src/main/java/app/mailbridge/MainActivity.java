@@ -9,12 +9,14 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.view.inputmethod.EditorInfo;
 import android.webkit.CookieManager;
 import android.webkit.ValueCallback;
@@ -55,6 +57,7 @@ public class MainActivity extends Activity {
         root = new FrameLayout(this);
         root.setBackgroundColor(BRAND_DEEP);
         setContentView(root);
+        applySafeArea();
 
         serverUrl = prefs().getString(KEY_URL, BuildConfig.DEFAULT_URL);
         if (handleSetupLink(getIntent())) return;
@@ -78,6 +81,22 @@ public class MainActivity extends Activity {
         Toast.makeText(this, "Connected to " + Uri.parse(url).getHost(), Toast.LENGTH_SHORT).show();
         showWeb(null);
         return true;
+    }
+
+    /**
+     * Android 15+ forces apps to draw edge-to-edge: without this the site would sit under the
+     * status bar / gesture bar and the keyboard would cover text fields. Pad the root view by the
+     * system bars, display cutout and keyboard instead.
+     */
+    private void applySafeArea() {
+        if (Build.VERSION.SDK_INT < 35) return; // older versions keep the classic fitted window + adjustResize
+        root.setOnApplyWindowInsetsListener((v, insets) -> {
+            android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+            android.graphics.Insets ime = insets.getInsets(WindowInsets.Type.ime());
+            v.setPadding(bars.left, bars.top, bars.right, Math.max(bars.bottom, ime.bottom));
+            return WindowInsets.CONSUMED;
+        });
+        root.requestApplyInsets();
     }
 
     // ───────────────────────── Web view ─────────────────────────

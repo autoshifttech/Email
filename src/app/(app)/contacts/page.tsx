@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import { Pencil, Search, Trash2, Users } from "lucide-react";
 import { api, useApi } from "@/lib/client";
 import { Badge, Empty, Field, Loading, Modal, PageHeader, Spinner } from "@/components/ui";
 import { useToast } from "@/components/toast";
@@ -50,32 +51,32 @@ export default function ContactsPage() {
       <div className="grid lg:grid-cols-4 gap-5">
         <div className="glass p-3 h-fit">
           <div className="label px-2 pt-1">Groups</div>
-          <button onClick={() => setGroupFilter("")} className={`w-full text-left rounded-lg px-3 py-2 text-sm ${!groupFilter ? "chip-on font-semibold !rounded-full" : ""}`}>All contacts <span className="muted">({contacts?.length ?? 0})</span></button>
+          <button onClick={() => setGroupFilter("")} className={`w-full text-left rounded-lg px-3 py-2 text-sm ${!groupFilter ? "bg-white/20 font-semibold" : ""}`}>All contacts <span className="muted">({contacts?.length ?? 0})</span></button>
           {groups?.map((g) => (
-            <div key={g.id} className={`group flex items-center rounded-lg ${groupFilter === g.id ? "chip-on !rounded-full" : ""}`}>
+            <div key={g.id} className={`group flex items-center rounded-lg ${groupFilter === g.id ? "bg-white/20" : ""}`}>
               <button onClick={() => setGroupFilter(g.id)} className={`flex-1 text-left px-3 py-2 text-sm ${groupFilter === g.id ? "font-semibold" : ""}`}>{g.name} <span className="muted">({g.memberCount})</span></button>
-              <button className="px-1 text-xs muted hover:text-current" title="Edit" onClick={() => setEditG(g)}>✏️</button>
-              <button className="px-2 text-xs muted hover:text-rose-200" title="Delete" onClick={() => delGroup(g)}>🗑</button>
+              <button className="p-1.5 muted hover:text-white" title="Edit group" aria-label="Edit group" onClick={() => setEditG(g)}><Pencil size={14} /></button>
+              <button className="p-1.5 mr-1 muted hover:text-rose-200" title="Delete group" aria-label="Delete group" onClick={() => delGroup(g)}><Trash2 size={14} /></button>
             </div>
           ))}
           {!groups?.length && <p className="text-xs muted px-3 py-2">No groups yet.</p>}
         </div>
         <div className="lg:col-span-3">
-          <input className="input mb-3" placeholder="🔍 Search contacts…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <div className="relative mb-3"><Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 opacity-60 pointer-events-none" /><input className="input !pl-11" placeholder="Search contacts…" value={q} onChange={(e) => setQ(e.target.value)} /></div>
           {loading && !contacts ? <Loading /> : !filtered.length ? (
-            <Empty icon="👥" title="No contacts" text="Add contacts one by one or import a CSV (name,email per line)." />
+            <Empty icon={Users} tone="sky" title="No contacts" text="Add contacts one by one or import a CSV (name,email per line)." />
           ) : (
             <div className="glass overflow-hidden">
               {filtered.map((c) => (
                 <div key={c.id} className="flex items-center gap-3 px-4 py-3 border-b border-app last:border-0">
-                  <div className="rn shrink-0 !w-10 !h-10">{(c.name || c.email).slice(0, 1).toUpperCase()}</div>
+                  <div className="h-9 w-9 rounded-full bg-white/20 border border-white/40 flex items-center justify-center text-sm font-bold text-white shrink-0">{(c.name || c.email).slice(0, 1).toUpperCase()}</div>
                   <div className="min-w-0 flex-1">
                     <div className="font-medium truncate">{c.name || "—"}</div>
                     <div className="text-sm muted truncate">{c.email}</div>
                     <div className="flex flex-wrap gap-1 mt-1">{c.groups.map((g) => <Badge key={g.id} color="green">{g.name}</Badge>)}{c.tags && c.tags.split(/[ ,]+/).filter(Boolean).map((t) => <Badge key={t}>{t}</Badge>)}</div>
                   </div>
                   <button className="btn btn-sm" onClick={() => setEditC({ ...c, groupIds: c.groups.map((g) => g.id) })}>Edit</button>
-                  <button className="btn btn-sm btn-danger" onClick={() => delContact(c)}>🗑</button>
+                  <button className="btn btn-sm btn-icon btn-danger" aria-label="Delete contact" title="Delete" onClick={() => delContact(c)}><Trash2 size={16} /></button>
                 </div>
               ))}
             </div>
@@ -117,7 +118,7 @@ function ContactForm({ c, groups, onClose, onSaved }: { c: Partial<Contact> & { 
             <div className="flex flex-wrap gap-2">
               {groups.map((g) => {
                 const on = f.groupIds.includes(g.id);
-                return <button type="button" key={g.id} className="chip !py-2 !px-3.5 text-sm" aria-pressed={on} onClick={() => setF({ ...f, groupIds: on ? f.groupIds.filter((x) => x !== g.id) : [...f.groupIds, g.id] })}>{on ? "✓ " : ""}{g.name}</button>;
+                return <button type="button" key={g.id} className={`btn btn-sm ${on ? "btn-primary" : ""}`} onClick={() => setF({ ...f, groupIds: on ? f.groupIds.filter((x) => x !== g.id) : [...f.groupIds, g.id] })}>{on ? "✓ " : ""}{g.name}</button>;
               })}
             </div>
           </Field>

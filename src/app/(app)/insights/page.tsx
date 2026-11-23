@@ -1,93 +1,121 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { BarChart3, Hourglass, Send, Zap } from "lucide-react";
 import Link from "next/link";
 import { useApi } from "@/lib/client";
 import { BarChart } from "@/components/charts";
-import { RollNumber, Ring, StatBar, WeekStrip, isoDay } from "@/components/motion";
+import { IconBack } from "@/components/icons";
 import { Loading } from "@/components/ui";
+import { IconChip } from "@/components/ico";
 
 type Insights = {
   date: string; received: number; unread: number; important: number; sent: number; aiSent: number; pending: number;
   hourly: number[]; byCategory: [string, number][];
 };
-const tz = () => new Date().getTimezoneOffset();
-const addDays = (iso: string, n: number) => { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + n); return isoDay(d); };
+
+const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 export default function InsightsPage() {
-  const today = isoDay(new Date());
-  const [date, setDate] = useState(today);
-  const weekStart = addDays(date, -new Date(date + "T00:00:00").getDay());
-  const { data: days } = useApi<{ counts: number[] }>(`/api/days?from=${weekStart}&days=7&tz=${tz()}`);
-  const { data } = useApi<Insights>(`/api/insights?date=${date}&tz=${tz()}`, { poll: 30_000 });
-  const dt = new Date(date + "T00:00:00");
+  const days = useMemo(() => Array.from({ length: 21 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - 20 + i); return d; }), []);
+  const [date, setDate] = useState(iso(new Date()));
+  const tz = new Date().getTimezoneOffset();
+  const { data } = useApi<Insights>(`/api/insights?date=${date}&tz=${tz}`, { poll: 30_000 });
+  const strip = useRef<HTMLDivElement>(null);
+  useEffect(() => { strip.current?.scrollTo({ left: strip.current.scrollWidth }); }, []);
+  const sel = new Date(date + "T00:00:00");
+  const isToday = date === iso(new Date());
   const peak = data ? data.hourly.indexOf(Math.max(...data.hourly)) : -1;
-  const read = data ? data.received - data.unread : 0;
 
   return (
-    <>
-      <div className="daterow rv">
-        <h2>{dt.getDate()} {dt.toLocaleDateString(undefined, { month: "long" })}, {dt.getFullYear()}</h2>
-        <div className="flex items-center gap-2">
-          {date !== today && <button type="button" className="pill text-[var(--orange-ink)] !py-2 !px-3.5 text-sm" onClick={() => setDate(today)}>Today</button>}
-          <button type="button" className="mini" aria-label="Previous day" onClick={() => setDate(addDays(date, -1))}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
-          </button>
-          <button type="button" className="mini" aria-label="Next day" disabled={date >= today} onClick={() => date < today && setDate(addDays(date, 1))}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
-          </button>
+    <div className="max-w-3xl mx-auto">
+      {/* header card: back + big emoji + gradient title */}
+      <div className="glass p-5 pb-6 relative overflow-hidden rise">
+        <div className="flex items-center">
+          <Link href="/" className="btn btn-icon" aria-label="Back"><IconBack /></Link>
+        </div>
+        <span className="absolute left-[16%] top-[46%] float-soft opacity-90" aria-hidden><Send size={22} /></span>
+        <span className="absolute right-[14%] top-[28%] float-soft [animation-delay:-1.4s] text-amber-200" aria-hidden><Zap size={26} /></span>
+        <div className="text-center -mt-4">
+          <div className="flex justify-center"><IconChip icon={BarChart3} tone="pink" size={76} float /></div>
+          <h1 className="text-2xl md:text-3xl font-extrabold mt-2 grad-text">Insights</h1>
         </div>
       </div>
-      <div className="rv">
-        <WeekStrip days={Array.from({ length: 7 }, (_, i) => ({ iso: addDays(weekStart, i), has: (days?.counts?.[i] ?? 0) > 0 }))} value={date} onChange={setDate} />
+
+      {/* date strip */}
+      <div ref={strip} className="flex gap-1.5 overflow-x-auto no-scrollbar py-4 -mx-1 px-1 rise" role="tablist" aria-label="Choose a day">
+        {days.map((d) => {
+          const v = iso(d);
+          const on = v === date;
+          const today = v === iso(new Date());
+          return (
+            <button
+              key={v}
+              role="tab"
+              aria-selected={on}
+              onClick={() => setDate(v)}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold transition ${on ? "bg-white text-[#2b1fb0] shadow-lg" : "text-white/80 hover:bg-white/12"}`}
+            >
+              {on ? `${today ? "Today, " : ""}${d.getDate()} ${d.toLocaleDateString(undefined, { month: "short" })}` : d.getDate()}
+            </button>
+          );
+        })}
       </div>
 
       {!data ? <Loading /> : (
-        <>
-          <section className="card summary !mt-4 rv" aria-label="Day summary">
-            <div className="sum-top">
-              <div>
-                <p className="muted">Received {date === today ? "today" : ""}</p>
-                <div className="sum-big"><b><RollNumber value={data.received} /></b><span>email{data.received === 1 ? "" : "s"}</span></div>
-                <p className="small mt-2">{data.unread ? `${data.unread} still unread` : data.received ? "All read 🎉" : "A quiet day"}</p>
-              </div>
-              <Ring pct={data.received ? (read / data.received) * 100 : 100} />
+        <div className="space-y-4">
+          <div className="rise">
+            <div className="text-sm font-semibold text-white/85">Emails received {isToday ? "today" : `on ${sel.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}`}</div>
+            <div className="flex items-end gap-2">
+              <span className="hero-number">{data.received}</span>
+              <span className="text-lg muted mb-2">{data.received === 1 ? "email" : "emails"}</span>
             </div>
-            <div className="stats">
-              <StatBar title="Replied" value={data.sent} total={Math.max(data.received, data.sent)} color="#ffb23d" />
-              <StatBar title="Important" value={data.important} total={Math.max(data.received, 1)} color="#e03c3c" />
-              <StatBar title="Sent by AI" value={data.aiSent} total={Math.max(data.sent, data.aiSent, 1)} color="#f5b800" />
-            </div>
-          </section>
+          </div>
 
-          <div className="card p-5 mt-5 rv">
-            <div className="sec">
-              <h2>Emails by hour</h2>
-              {data.received > 0 && <span className="pill !py-1.5 !px-3 text-xs">Busiest {String(peak).padStart(2, "0")}:00</span>}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 rise">
+            <Stat label="Sent" value={data.sent} />
+            <Stat label="Sent by AI" value={data.aiSent} />
+            <Stat label="Important" value={data.important} />
+            <Stat label="Still unread" value={data.unread} />
+          </div>
+
+          <div className="glass p-5 rise">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold">Emails by hour</h2>
+              {data.received > 0 && <span className="text-xs muted">Busiest: {String(peak).padStart(2, "0")}:00</span>}
             </div>
             <BarChart data={data.hourly.map((v, h) => ({ label: `${String(h).padStart(2, "0")}:00`, value: v }))} height={220} unit=" emails" highlight={peak >= 0 && data.received ? peak : undefined} />
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4 mt-5">
-            <div className="card p-5 rv">
-              <h2 className="text-lg font-semibold mb-3">Top categories</h2>
-              {!data.byCategory.length && <p className="small">No emails this day.</p>}
-              <ul className="space-y-3">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="glass p-5 rise">
+              <h2 className="font-bold mb-3">Top categories</h2>
+              {!data.byCategory.length && <p className="text-sm muted">No emails this day.</p>}
+              <ul className="space-y-2.5">
                 {data.byCategory.map(([c, n]) => (
                   <li key={c}>
-                    <div className="flex justify-between text-sm mb-1"><span className="capitalize font-medium">{c}</span><span className="font-semibold tabular-nums">{n}</span></div>
-                    <div className="bar"><i style={{ width: `${(n / Math.max(1, data.received)) * 100}%`, background: "linear-gradient(90deg,#ffb23d,#ee6a00)" }} /></div>
+                    <div className="flex justify-between text-sm mb-1"><span className="capitalize">{c}</span><span className="font-semibold tabular-nums">{n}</span></div>
+                    <div className="h-1.5 rounded-full bg-white/15 overflow-hidden"><div className="h-full rounded-full bg-white/80" style={{ width: `${(n / data.received) * 100}%` }} /></div>
                   </li>
                 ))}
               </ul>
             </div>
-            <Link href="/drafts" className="card p-5 rv block">
-              <h2 className="text-lg font-semibold">Approvals ⏳</h2>
-              <div className="tile-number mt-3"><RollNumber value={data.pending} /></div>
-              <p className="small mt-1">{data.pending ? "drafts are waiting for you →" : "Nothing waiting. You're all caught up!"}</p>
+            <Link href="/drafts" className="glass p-5 rise hover:bg-white/10 block">
+              <h2 className="font-bold flex items-center gap-2.5"><IconChip icon={Hourglass} tone="orange" size={30} /> Approvals</h2>
+              <div className="tile-number mt-3">{data.pending}</div>
+              <p className="text-sm muted mt-1">{data.pending ? "drafts are waiting for you" : "nothing waiting. You're all caught up!"}</p>
             </Link>
           </div>
-        </>
+        </div>
       )}
-    </>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <div className="text-xs font-semibold muted">{label}</div>
+      <div className="text-2xl font-bold tabular-nums">{value.toLocaleString()}</div>
+    </div>
   );
 }

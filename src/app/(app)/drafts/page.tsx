@@ -1,6 +1,6 @@
 "use client";
-import { useRef, useState } from "react";
-import { PLANE_SVG, celebrate, check, pip, plane, stamp } from "@/lib/fx";
+import { useState } from "react";
+import { Bot, CheckCheck, CheckCircle2, MessageCircle, Monitor, PenLine, Pencil, Send, Trash2, X } from "lucide-react";
 import { api, useApi, timeAgo } from "@/lib/client";
 import { Badge, Empty, Loading, PageHeader, Spinner, StatusBadge } from "@/components/ui";
 import { useToast } from "@/components/toast";
@@ -25,11 +25,11 @@ export default function DraftsPage() {
   return (
     <>
       <PageHeader title="Approvals" subtitle="Drafts from WhatsApp and the dashboard. Nothing is sent until you approve it." />
-      <div className="chips mb-2" role="group" aria-label="Filter drafts">
-        {TABS.map((t) => <button key={t.id} onClick={() => setTab(t.id)} className="chip !py-2 !px-3.5 text-sm" aria-pressed={tab === t.id}>{t.label}</button>)}
+      <div className="flex gap-1 overflow-x-auto mb-4">
+        {TABS.map((t) => <button key={t.id} onClick={() => setTab(t.id)} className={`btn btn-sm ${tab === t.id ? "btn-primary" : ""}`}>{t.label}</button>)}
       </div>
       {loading && !data ? <Loading /> : !data?.length ? (
-        <Empty icon="✅" title={tab === "PENDING_APPROVAL" ? "Nothing waiting for approval" : "No drafts"} text="AI drafts you request on WhatsApp also appear here." />
+        <Empty icon={CheckCheck} tone="green" title={tab === "PENDING_APPROVAL" ? "Nothing waiting for approval" : "No drafts"} text="AI drafts you request on WhatsApp also appear here." />
       ) : (
         <div className="space-y-4">{data.map((d) => <DraftCard key={d.id} d={d} onChange={reload} />)}</div>
       )}
@@ -47,8 +47,6 @@ function DraftCard({ d, onChange }: { d: Draft; onChange: () => void }) {
   const [aiPrompt, setAiPrompt] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const editable = d.status === "PENDING_APPROVAL" || d.status === "FAILED";
-  const cardRef = useRef<HTMLDivElement>(null);
-  const sendBtn = useRef<HTMLButtonElement>(null);
 
   const run = async (name: string, fn: () => Promise<unknown>, ok?: string) => {
     setBusy(name);
@@ -65,7 +63,6 @@ function DraftCard({ d, onChange }: { d: Draft; onChange: () => void }) {
   const save = () => run("save", async () => {
     await api(`/api/drafts/${d.id}`, { method: "PATCH", body: { subject, body, ...(d.mode !== "BROADCAST" ? { to } : {}) } });
     setEdit(false);
-    check("sm", cardRef.current?.querySelector(".font-semibold"));
   }, "Draft saved");
   const revise = () => run("ai", async () => {
     const r = await api<{ subject: string; body: string }>("/api/ai/draft", { body: { kind: "revise", subject, body, prompt: aiPrompt } });
@@ -78,27 +75,16 @@ function DraftCard({ d, onChange }: { d: Draft; onChange: () => void }) {
     if (edit) await api(`/api/drafts/${d.id}`, { method: "PATCH", body: { subject, body, ...(d.mode !== "BROADCAST" ? { to } : {}) } });
     if (recipients.length > 1 && !confirm(`Send to ${recipients.length} recipients?`)) return;
     const r = await api<{ queued?: boolean }>(`/api/drafts/${d.id}/send`, { method: "POST" });
-    // the paper plane takes off, the card gets stamped, a big check is drawn
-    plane(sendBtn.current);
-    stamp(cardRef.current, "SENT", "#2f9a6c");
-    setTimeout(() => (recipients.length > 1 ? celebrate(cardRef.current) : (check("big"), pip.cheer())), 700);
-    toast("success", r.queued ? "Sending in the background…" : "Sent ✅");
-    await new Promise((res) => setTimeout(res, 900));
+    toast("success", r.queued ? "Sending in the background…" : "Sent");
   });
-  const reject = () => run("rej", async () => {
-    await api(`/api/drafts/${d.id}`, { method: "PATCH", body: { status: "REJECTED" } });
-    stamp(cardRef.current, "REJECTED");
-    pip.react("gasp", "gasp", 700);
-    await new Promise((res) => setTimeout(res, 800));
-  }, "Draft cancelled");
 
   return (
-    <div ref={cardRef} className="card p-4 md:p-5 relative rv">
+    <div className="glass p-4">
       <div className="flex flex-wrap items-center gap-2 mb-2">
         <StatusBadge s={d.status} />
         <Badge color="blue">{d.mode === "REPLY" ? "Reply" : d.mode === "BROADCAST" ? `Broadcast · ${recipients.length}` : "New email"}</Badge>
-        <Badge color={d.author === "AI" ? "purple" : "gray"}>{d.author === "AI" ? "🤖 AI" : "✍️ Manual"}</Badge>
-        <Badge>{d.origin === "WHATSAPP" ? "💬 WhatsApp" : "🖥 Dashboard"}</Badge>
+        <Badge color={d.author === "AI" ? "purple" : "gray"}>{d.author === "AI" ? <><Bot size={11} /> AI</> : <><PenLine size={11} /> Manual</>}</Badge>
+        <Badge>{d.origin === "WHATSAPP" ? <><MessageCircle size={11} /> WhatsApp</> : <><Monitor size={11} /> Dashboard</>}</Badge>
         <span className="ml-auto text-xs muted">{timeAgo(d.createdAt)}</span>
       </div>
       <div className="text-sm space-y-0.5 mb-3">
@@ -117,32 +103,30 @@ function DraftCard({ d, onChange }: { d: Draft; onChange: () => void }) {
           <textarea className="input" rows={10} value={body} onChange={(e) => setBody(e.target.value)} />
         </div>
       ) : (
-        <div className="glass-soft p-4">
+        <div className="rounded-xl glass-soft p-4">
           <div className="font-semibold mb-2">{subject}</div>
           <div className="prose-email">{body}</div>
         </div>
       )}
       {d.status === "SENDING" && <p className="text-sm mt-2"><Spinner /> Sent {d.sentCount}/{recipients.length}…</p>}
-      {d.status === "SENT" && <p className="text-sm mt-2 text-accent font-semibold">✅ Sent to {d.sentCount} recipient(s) {d.sentAt && timeAgo(d.sentAt)}</p>}
+      {d.status === "SENT" && <p className="text-sm mt-2 text-accent font-semibold flex items-center gap-1.5"><CheckCircle2 size={16} /> Sent to {d.sentCount} recipient(s) {d.sentAt && timeAgo(d.sentAt)}</p>}
       {d.error && <pre className="text-xs text-bad mt-2 whitespace-pre-wrap">{d.error}</pre>}
       {editable && (
         <>
           <div className="flex flex-col sm:flex-row gap-2 mt-3">
-            <input className="input" placeholder='🤖 Ask AI to change it, e.g. "make it shorter"' value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} onKeyDown={(e) => e.key === "Enter" && aiPrompt && revise()} />
+            <input className="input" placeholder='Ask AI to change it, e.g. "make it shorter"' value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} onKeyDown={(e) => e.key === "Enter" && aiPrompt && revise()} />
             <button className="btn" disabled={!aiPrompt || busy === "ai"} onClick={revise}>{busy === "ai" && <Spinner />} Revise</button>
           </div>
           <div className="flex flex-wrap gap-2 mt-3 justify-end">
-            {edit ? <button className="btn" onClick={save} disabled={!!busy}>{busy === "save" && <Spinner />} Save</button> : <button className="btn" onClick={() => setEdit(true)}>✏️ Edit</button>}
-            <button className="btn btn-danger" disabled={!!busy} onClick={reject}>❌ Reject</button>
-            <button ref={sendBtn} className="btn btn-primary" disabled={!!busy} onClick={send}>
-              {busy === "send" ? <Spinner /> : <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden dangerouslySetInnerHTML={{ __html: PLANE_SVG }} />} Approve & send
-            </button>
+            {edit ? <button className="btn" onClick={save} disabled={!!busy}>{busy === "save" && <Spinner />} Save</button> : <button className="btn" onClick={() => setEdit(true)}><Pencil size={16} /> Edit</button>}
+            <button className="btn btn-danger" disabled={!!busy} onClick={() => run("rej", () => api(`/api/drafts/${d.id}`, { method: "PATCH", body: { status: "REJECTED" } }), "Draft cancelled")}><X size={16} /> Reject</button>
+            <button className="btn btn-primary" disabled={!!busy} onClick={send}>{busy === "send" ? <Spinner /> : <Send size={16} />} Approve & send</button>
           </div>
         </>
       )}
       {!editable && d.status !== "SENDING" && (
         <div className="flex justify-end mt-3">
-          <button className="btn btn-sm btn-danger" onClick={() => confirm("Delete this draft record?") && run("del", () => api(`/api/drafts/${d.id}`, { method: "DELETE" }), "Deleted")}>🗑 Delete</button>
+          <button className="btn btn-sm btn-danger" onClick={() => confirm("Delete this draft record?") && run("del", () => api(`/api/drafts/${d.id}`, { method: "DELETE" }), "Deleted")}><Trash2 size={15} /> Delete</button>
         </div>
       )}
     </div>

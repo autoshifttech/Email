@@ -1,16 +1,13 @@
 import { Suspense } from "react";
-import { AppHeader, Dock } from "@/components/nav";
+import { Nav } from "@/components/nav";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <main className="mx-auto w-full max-w-5xl px-4 md:px-8 pt-[max(14px,env(safe-area-inset-top))] pb-[calc(150px+env(safe-area-inset-bottom))]">
-        <Suspense>
-          <AppHeader />
-          {children}
-        </Suspense>
+      <Nav />
+      <main className="md:pl-[17rem] pb-28 md:pb-10">
+        <div className="mx-auto max-w-6xl px-4 md:px-8 pt-6 md:pt-9"><Suspense>{children}</Suspense></div>
       </main>
-      <Dock />
     </>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
+import { Bot, CheckCircle2, KeyRound, Trash2, XCircle } from "lucide-react";
 import { api, useApi, timeAgo } from "@/lib/client";
 import { AI_PRESETS } from "@/lib/ai-presets";
 import { Badge, Empty, Field, Loading, Modal, PageHeader, Spinner } from "@/components/ui";
 import { useToast } from "@/components/toast";
-import { check, pip } from "@/lib/fx";
 import type { PublicProvider } from "@/lib/serialize";
 
 type Resp = { providers: PublicProvider[]; envFallback: boolean; envModel: string | null };
@@ -20,7 +20,7 @@ export default function AiPage() {
     setTesting(p.id);
     try {
       const r = await api<Test>(`/api/ai-providers/${p.id}/test`, { method: "POST" });
-      toast(r.ok ? "success" : "error", r.ok ? `✅ Works (${r.ms} ms)` : `❌ ${r.message}`);
+      toast(r.ok ? "success" : "error", r.ok ? `Works (${r.ms} ms)` : r.message);
       reload();
     } finally {
       setTesting(null);
@@ -29,8 +29,6 @@ export default function AiPage() {
   const activate = async (p: PublicProvider) => {
     await api(`/api/ai-providers/${p.id}/activate`, { method: "POST" });
     toast("success", `${p.name} is now active`);
-    pip.cheer();
-    check("big");
     reload();
   };
   const remove = async (p: PublicProvider) => {
@@ -58,7 +56,7 @@ export default function AiPage() {
       </div>
 
       {loading && !data ? <Loading /> : !data?.providers.length ? (
-        <Empty icon="🤖" title="No AI key yet" text={data?.envFallback ? `Using the key from the server's .env file (${data.envModel}). Add one here to manage it from the dashboard.` : "Without an AI key, emails are forwarded with a plain preview instead of a summary, and AI replies are disabled."} action={<button className="btn btn-primary" onClick={() => setEditing({ preset: "groq" })}>+ Add a free Groq key</button>} />
+        <Empty icon={Bot} tone="violet" title="No AI key yet" text={data?.envFallback ? `Using the key from the server's .env file (${data.envModel}). Add one here to manage it from the dashboard.` : "Without an AI key, emails are forwarded with a plain preview instead of a summary, and AI replies are disabled."} action={<button className="btn btn-primary" onClick={() => setEditing({ preset: "groq" })}>+ Add a free Groq key</button>} />
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
           {data.providers.map((p) => (
@@ -71,7 +69,7 @@ export default function AiPage() {
               </div>
               <div className="text-sm mt-2 space-y-0.5">
                 <div><span className="muted">Model:</span> <code>{p.model}</code></div>
-                <div className="truncate"><span className="muted">Endpoint:</span> <code className="text-xs">{p.baseUrl}</code></div>
+                <div className="min-w-0"><span className="muted">Endpoint:</span> <code className="text-xs break-all">{p.baseUrl}</code></div>
                 <div><span className="muted">API key:</span> {p.hasKey ? <code>{p.keyHint}</code> : <span className="muted">none</span>}</div>
                 {p.lastTestedAt && <div className="text-xs muted">Last tested {timeAgo(p.lastTestedAt)}</div>}
                 {p.lastError && p.lastTestOk === false && <div className="text-xs text-bad break-words">{p.lastError}</div>}
@@ -79,8 +77,8 @@ export default function AiPage() {
               <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-app">
                 {!p.isActive && <button className="btn btn-sm btn-primary" onClick={() => activate(p)}>Use this</button>}
                 <button className="btn btn-sm" disabled={testing === p.id} onClick={() => test(p)}>{testing === p.id && <Spinner />} Test</button>
-                <button className="btn btn-sm" onClick={() => setEditing(p)}>✏️ Edit / change key</button>
-                <button className="btn btn-sm btn-danger ml-auto" onClick={() => remove(p)}>🗑</button>
+                <button className="btn btn-sm" onClick={() => setEditing(p)}><KeyRound size={15} /> Edit / change key</button>
+                <button className="btn btn-sm btn-icon btn-danger ml-auto" aria-label="Delete AI key" title="Delete" onClick={() => remove(p)}><Trash2 size={16} /></button>
               </div>
             </div>
           ))}
@@ -167,7 +165,7 @@ function ProviderForm({ p, onClose, onSaved }: { p: Partial<PublicProvider>; onC
         {!p.id && (
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.isActive} onChange={(e) => setF({ ...f, isActive: e.target.checked })} /> Make this the active AI</label>
         )}
-        {test && <div className={`text-sm ${test.ok ? "text-good" : "text-bad"}`}>{test.ok ? "✅" : "❌"} {test.message} ({test.ms} ms)</div>}
+        {test && <div className={`text-sm ${test.ok ? "text-good" : "text-bad"}`}>{test.ok ? <CheckCircle2 size={16} className="inline -mt-0.5" /> : <XCircle size={16} className="inline -mt-0.5" />} {test.message} ({test.ms} ms)</div>}
         <div className="flex flex-wrap justify-end gap-2">
           <button type="button" className="btn" onClick={runTest} disabled={testing}>{testing && <Spinner />} Test</button>
           <button type="button" className="btn" onClick={onClose}>Cancel</button>

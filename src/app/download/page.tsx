@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
+import { Apple, CheckCircle2, Inbox, PenSquare } from "lucide-react";
 import Link from "next/link";
 import { IconDownload } from "@/components/icons";
+import { IconChip } from "@/components/ico";
 
 type Latest = { versionName: string; versionCode: number; size: number; sha256: string; builtAt: string; file: string };
 
@@ -56,7 +58,7 @@ export default function DownloadPage() {
         </section>
 
         <section className="glass p-5 mt-6 rise">
-          <h2 className="font-bold">🍏 On iPhone?</h2>
+          <h2 className="font-bold flex items-center gap-2.5"><IconChip icon={Apple} tone="white" size={32} /> On iPhone?</h2>
           <p className="text-sm muted mt-1">Open this site in <b>Safari</b>, tap the <b>Share</b> button, then <b>Add to Home Screen</b>. MailBridge installs as an app (PWA), no download needed.</p>
         </section>
 
@@ -97,18 +99,18 @@ function PhoneMock() {
             <div className="text-5xl font-bold tracking-tight">12<span className="text-sm muted font-medium">/48</span></div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div className="glass-soft p-2.5"><div className="text-[10px] font-semibold">Today 📩</div><div className="text-xl font-bold mt-1">16</div></div>
+            <div className="glass-soft p-2.5"><div className="text-[10px] font-semibold">Today</div><div className="text-xl font-bold mt-1">16</div></div>
             <div className="glass-soft p-2.5 row-span-2 flex flex-col">
-              <div className="text-[10px] font-semibold">This week 📈</div>
+              <div className="text-[10px] font-semibold">This week</div>
               <svg viewBox="0 0 100 40" className="flex-1 w-full mt-2"><path d="M0 30 C15 28 20 33 35 30 C50 26 55 8 65 10 C75 12 80 30 100 32" fill="none" stroke="#ff5a7a" strokeWidth="2.5" /></svg>
               <div className="text-xl font-bold">68</div>
             </div>
-            <div className="glass-soft p-2.5"><div className="text-[10px] font-semibold">Approvals ⏳</div><div className="text-xl font-bold mt-1">1</div></div>
+            <div className="glass-soft p-2.5"><div className="text-[10px] font-semibold">Approvals</div><div className="text-xl font-bold mt-1">1</div></div>
           </div>
           <div className="glass-soft p-2.5 text-[11px] font-semibold">Link your WhatsApp to your account.<div className="mt-1.5 inline-block rounded-full bg-white text-[#2b1fb0] px-2.5 py-0.5">Link</div></div>
           <div className="mt-auto glass-soft !rounded-full p-1.5 flex items-center justify-between">
             <span className="rounded-full bg-white text-[#2b1fb0] text-[10px] font-bold px-3 py-1.5">⌂ Home</span>
-            <span className="text-xs px-2">▤</span><span className="text-xs px-2">✎</span><span className="text-xs px-2">✓</span>
+            <span className="px-2"><Inbox size={12} /></span><span className="px-2"><PenSquare size={12} /></span><span className="px-2"><CheckCircle2 size={12} /></span>
           </div>
         </div>
       </div>

@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
+import { Bell, Lock, MessageCircle, PenLine, RefreshCw } from "lucide-react";
 import { api, useApi } from "@/lib/client";
 import { Field, Loading, PageHeader, Spinner, Toggle } from "@/components/ui";
-import { Seg } from "@/components/motion";
-import { check } from "@/lib/fx";
+import { IconChip } from "@/components/ico";
 import { useToast } from "@/components/toast";
 
 type S = Record<string, { value: string; secret: boolean; isSet: boolean; hint?: string }>;
@@ -27,7 +27,6 @@ export default function SettingsPage() {
     try {
       await api("/api/settings", { method: "PUT", body: { values: Object.fromEntries(keys.map((k) => [k, v[k] ?? ""])) } });
       toast("success", "Settings saved");
-      check("big");
       reload();
     } catch (e) {
       toast("error", (e as Error).message);
@@ -74,7 +73,7 @@ export default function SettingsPage() {
       <div className="space-y-5 max-w-3xl">
         <section className="glass p-5 space-y-4">
           <div>
-            <h2 className="font-semibold">💬 WhatsApp (Meta Cloud API)</h2>
+            <h2 className="font-semibold flex items-center gap-2.5"><IconChip icon={MessageCircle} tone="green" size={32} /> WhatsApp (Meta Cloud API)</h2>
             <p className="text-sm muted">From developers.facebook.com → your app → WhatsApp → API Setup. See README for the step-by-step guide.</p>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
@@ -99,7 +98,7 @@ export default function SettingsPage() {
 
         <section className="glass p-5 space-y-4">
           <div>
-            <h2 className="font-semibold">🔄 Automatic mail check</h2>
+            <h2 className="font-semibold flex items-center gap-2.5"><IconChip icon={RefreshCw} tone="sky" size={32} /> Automatic mail check</h2>
             <p className="text-sm muted mt-1">
               {data.serverless
                 ? "You're on a serverless host (Vercel), which can't keep a mailbox connection open. Call this URL every 1–5 minutes to check for new mail."
@@ -124,19 +123,17 @@ export default function SettingsPage() {
         </section>
 
         <section className="glass p-5 space-y-4">
-          <h2 className="font-semibold">🔔 Notification rules</h2>
+          <h2 className="font-semibold flex items-center gap-2.5"><IconChip icon={Bell} tone="orange" size={32} /> Notification rules</h2>
           <Toggle checked={v.WA_NOTIFICATIONS_ENABLED !== "false"} onChange={(x) => set("WA_NOTIFICATIONS_ENABLED", x ? "true" : "false")} label="Forward new emails to WhatsApp" />
           <div className="grid sm:grid-cols-2 gap-3">
-            <div className="sm:col-span-2">
-              <span className="label">Forward emails with priority</span>
-              <Seg
-                label="Minimum priority to forward"
-                value={(v.NOTIFY_MIN_PRIORITY as "low" | "normal" | "high" | "urgent") || "low"}
-                onChange={(x) => set("NOTIFY_MIN_PRIORITY", x)}
-                options={[{ value: "low", label: "All" }, { value: "normal", label: "Normal+" }, { value: "high", label: "High+" }, { value: "urgent", label: "Urgent" }]}
-              />
-              <p className="small mt-2 text-center">Slide to choose. The AI rates every email; newsletters and promos count as low.</p>
-            </div>
+            <Field label="Only forward emails with priority" hint="The AI rates every email">
+              <select className="input" value={v.NOTIFY_MIN_PRIORITY ?? "low"} onChange={(e) => set("NOTIFY_MIN_PRIORITY", e.target.value)}>
+                <option value="low">All emails</option>
+                <option value="normal">Normal and above (skip newsletters/promos)</option>
+                <option value="high">High and urgent only</option>
+                <option value="urgent">Urgent only</option>
+              </select>
+            </Field>
             <Field label="Timezone" hint="e.g. Asia/Kolkata"><input className="input" value={v.TIMEZONE ?? ""} onChange={(e) => set("TIMEZONE", e.target.value)} /></Field>
             <Field label="Quiet hours start" hint="No alerts in this window (urgent still comes through)"><input className="input" type="time" value={v.QUIET_HOURS_START ?? ""} onChange={(e) => set("QUIET_HOURS_START", e.target.value)} /></Field>
             <Field label="Quiet hours end"><input className="input" type="time" value={v.QUIET_HOURS_END ?? ""} onChange={(e) => set("QUIET_HOURS_END", e.target.value)} /></Field>
@@ -145,7 +142,7 @@ export default function SettingsPage() {
         </section>
 
         <section className="glass p-5 space-y-4">
-          <h2 className="font-semibold">✍️ AI writing style</h2>
+          <h2 className="font-semibold flex items-center gap-2.5"><IconChip icon={PenLine} tone="pink" size={32} /> AI writing style</h2>
           <div className="grid sm:grid-cols-2 gap-3">
             <Field label="Your name (email sign-off)"><input className="input" value={v.OWNER_NAME ?? ""} onChange={(e) => set("OWNER_NAME", e.target.value)} /></Field>
             <Field label="Language"><input className="input" value={v.AI_LANGUAGE ?? ""} onChange={(e) => set("AI_LANGUAGE", e.target.value)} /></Field>
@@ -155,7 +152,7 @@ export default function SettingsPage() {
         </section>
 
         <form onSubmit={changePw} className="glass p-5 space-y-4">
-          <h2 className="font-semibold">🔒 Change password</h2>
+          <h2 className="font-semibold flex items-center gap-2.5"><IconChip icon={Lock} tone="violet" size={32} /> Change password</h2>
           <div className="grid sm:grid-cols-2 gap-3">
             <Field label="Current password"><input className="input" type="password" required value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} /></Field>
             <Field label="New password"><input className="input" type="password" required minLength={8} value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} /></Field>
